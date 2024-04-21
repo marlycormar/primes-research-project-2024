@@ -193,7 +193,7 @@ svm_res |> tune::select_best(metric = 'roc_auc')
 
 ### Model Performance
 
-We then apply our selected model to the test set. The final metrics are given in @tbl-svm-perform.
+We then apply our selected model to the test set. The final metrics are given in @tbl-svm-performance.
 
 ```{r svn-performance, cache=TRUE, echo=TRUE}
 
@@ -207,7 +207,7 @@ svm_pred <-
 
 
 ```{r}
-#| label: tbl-svm-perform
+#| label: tbl-svm-performance
 #| tbl-cap: 'SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
 #| tbl-alt: 'SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
 

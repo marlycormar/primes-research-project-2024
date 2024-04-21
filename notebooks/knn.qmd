@@ -172,7 +172,7 @@ knn_res |> tune::select_best(metric = 'roc_auc')
 
 ### Model Performance
 
-We then apply our selected model to the test set. The final metrics are given in @tbl-knn-perform.
+We then apply our selected model to the test set. The final metrics are given in @tbl-knn-performance.
 
 ```{r, cache=TRUE, echo=TRUE}
 
@@ -186,7 +186,7 @@ knn_pred <-
 
 
 ```{r}
-#| label: tbl-knn-perform
+#| label: tbl-knn-performance
 #| tbl-cap: 'KNN Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
 #| tbl-alt: 'KNN Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
 

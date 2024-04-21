@@ -138,7 +138,7 @@ ann_res |> tune::select_best(metric = 'roc_auc')
 
 ### Model Performance
 
-We then apply our selected model to the test set. The final metrics are given in @tbl-ann-perform.
+We then apply our selected model to the test set. The final metrics are given in @tbl-ann-performance.
 
 ```{r, echo=TRUE}
 
