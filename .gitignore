@@ -1,6 +1,25 @@
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
 
+# Ignore temp and cache files.
+_freeze/
+data/ann-metrics.csv
+data/knn-metrics.csv
+data/svm-metrics.csv
+data/gbm-metrics.csv
+data/lr-metrics.csv
+data/rf-metrics.csv
+index_cache/
+index_files/
+notebooks/ann_cache/
+notebooks/eda_cache/
+notebooks/knn_cache/
+notebooks/svm_cache/
+notebooks/gbm_cache/
+notebooks/logistic-reg_cache/
+notebooks/random-forest_cache/
+notebooks/*.ipynb
+
 /.quarto/
 /_manuscript
 
