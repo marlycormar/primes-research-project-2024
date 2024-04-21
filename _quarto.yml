@@ -1,0 +1,30 @@
+project:
+  type: manuscript
+  render:
+  - "*.qmd"
+  - "!TODO.md"
+  - "!README.md"
+execute:
+  freeze: auto
+
+format:
+  html:
+    notebook-links: global
+    notebook-view: false
+    toc: true
+    toc-depth: 5
+    comments:
+      hypothesis: true
+  docx: default
+  jats: default
+  # aft-pdf:
+  #   notebook-links: global
+  #   notebook-view: false
+  #   default:
+  #     keep-tex: true
+  pdf:
+    notebook-links: global
+    notebook-view: false
+    default:
+      keep-tex: true
+    

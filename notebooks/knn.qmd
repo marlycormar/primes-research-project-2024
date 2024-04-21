@@ -1,0 +1,231 @@
+## K-Nearest Neighbors
+
+### Model Description
+
+The K-Nearest Neighbors (KNN) algorithm is a nonparametric algorithm which classifies a given sample using the $k$ nearest training data points. For a given point $X$ in the plane we want to classify, the probability that its label $\hat{Y}$ equals a given $j$ is:
+
+$$
+P(\hat{Y} = j) = \frac{1}{k}\sum_{s \in N} I(Y_s = j),
+$$
+
+where $N$ is the set of the $k$-nearest neighbors from $X$ (in our training data) and $Y_s$ denotes the true label of point $s$. We classify $X$ as the majority label of the elements of $N$. A brief illustration of how this works is shown in @fig-knn-overview.
+
+```{r}
+#| label: fig-knn-overview
+#| fig-cap: 'High-level description of the KNN algorithm.'
+
+knitr::include_graphics(here::here('images/knn-image.png'))
+```
+
+The algorithm uses neighboring points to draw conclusions about a given point. Note that no model training takes place; the algorithm just memorizes the training data itself (this is usually referred to as a "lazy" algorithm).
+
+The parameters of the classifier are the hyper-parameters $k$, the distance measure, and the weight function.
+
+### Distance Measure
+
+In the usual case of numerical predictors, the examples of common distance measures used to get the $k$ neighbors are the Euclidean distance, the Manhattan distance, and the Minkowsky distance.
+
+The classifier is very sensitive to the scaling of the variables. Therefore, it's crucial to normalize all numerical predictors so that each one is equally weighted.
+
+### Bias-Variance Tradeoff
+
+The performance of the KNN classifier is dependent on $k$. For example, setting $k = 1$ simply assigns each point to the class of the single nearest neighbor, while large values of $k$ "smoothen" the classifying boundary. Generally, the optimal value of $k$ depends on the *bias-variance tradeoff*. Small values of $k$ result in low bias, but high variance. In this case, the training error is low, but the model overfits. On the other hand, large values of $k$ result in high bias, but low variance. This means that the training error itself is high, but the training and test performances are comparable, and so the model underfits.
+
+Also, it is recommended to choose $k$ such that no classification ties are possible. When we have two classes (like we do here), this means choosing an odd $k$.
+
+Note that the decision boundary of this model is formed by the intersections of different hyperplanes, which gets more complex as $k$ increases.
+
+### Curse of Dimensionality
+
+Although KNN may perform well when there is a small number of parameters, for a large number of parameters the model suffers from *the curse of dimensionality*.
+
+This refers to the many difficulties that arise when we have high dimensional data. First, as the number of dimensions increases, the size of the data space increases exponentially and hence, the probability that some point is at most a given distance from the query point decreases exponentially. So we effectively increase the sample size exponentially when we add a new dimension.
+
+Also, in higher dimensions, the distances from the nearest and furthest points become pretty similar and so the classifier loses importance. 
+
+As such, it is important to reduce the dimensions of the data before applying this model. Since our data is relatively low-dimensional and given the nature of our predictors, the KNN performs well using the entire data set.
+
+### Weighted Function
+
+To improve model perforance, we can use a weighted version of the KNN algorithm: each of the $k$ nearest neighbors is weighted based on the distance from the test point. Note that the weighting of a neighbor would be inversely proportional to the distance. In general, this makes the classifier more flexible and adaptable to the local structure of the data.
+
+### Model Workflow
+
+```{r}
+# Read cleaned data.
+cleaned_data <- readr::read_csv(here::here('data', 'cleaned-data.csv'))
+```
+
+
+```{r knn-data-split, cache=TRUE}
+
+# Initialize a random number generator.
+set.seed(314)
+
+# Split data into training and test sets.
+data_split <- rsample::initial_split(cleaned_data)
+train_data <- rsample::training(data_split)
+test_data <- rsample::testing(data_split)
+
+# Split the training data into 10 folds for cross-validation.
+data_cross_val <- rsample::vfold_cv(train_data)
+
+# Set aside the outcome column of the sample test data.
+test_outcome <- 
+  factor(test_data$Recurred)
+
+```
+
+
+```{r knn-data-recipes, cache=TRUE}
+library(tidymodels)
+
+# Create recipe for the data prep.
+data_rec <- recipes::recipe(Recurred ~ ., data = train_data) |>
+  recipes::step_corr(threshold = 0.6) |>
+  recipes::step_normalize(recipes::all_numeric()) |>
+  recipes::step_dummy(recipes::all_nominal_predictors())
+
+```
+
+Now let us create a KNN model specification and workflow indicating the model hyper-parameters: a number of neighbors, a weight function, and a distance function. To optimize our model, we will use the `tune::tune()` function to find optimal values of these parameters in terms of model accuracy. 
+
+```{r knn-workflow, cache=TRUE}
+
+# Create model specification.
+knn_model_spec <-
+  parsnip::nearest_neighbor(
+    neighbors = tune::tune(),
+    weight_func = tune::tune(),
+    dist_power = tune::tune()
+  ) |>
+  parsnip::set_mode('classification') |>
+  parsnip::set_engine('kknn')
+
+# Create model workflow.
+knn_workflow <- workflows::workflow() |>
+  workflows::add_model(knn_model_spec) |>
+  workflows::add_recipe(data_rec)
+
+```
+
+### Model Tuning and Fitting
+
+We then move to actually running our prepared workflow. In order to make the computation as fast as possible, we use parallel computing, i.e., the computation is distributed and simultaneously done over different cores.
+
+Now we fine-tune the model hyper-parameters (namely $k$, the distance function, and the weight function) using the $10$-fold cross validation we set up earlier. Then we select the best model based on accuracy and the ROC curve.
+
+```{r knn-param-tunning, cache=TRUE, warning=FALSE, echo=TRUE}
+
+#' Check number of available cores.
+cores_no <- parallel::detectCores() - 1
+
+#' Start timer.
+tictoc::tic()
+
+# Create cores_no clusters.
+clusters <- parallel::makeCluster(cores_no)
+
+# Start clusters.
+doParallel::registerDoParallel(clusters)
+
+# Fine-tune the model params.
+knn_res <- tune::tune_grid(
+  object = knn_workflow,
+  preprocessor = knn_model_spec,
+  resamples = data_cross_val,
+  control = tune::control_resamples(save_pred = TRUE)
+)
+
+# Select 'best' fit (in terms of accuracy).
+knn_best_fit <- 
+  knn_res |> 
+  tune::select_best(metric = 'accuracy')
+
+# Use the 'best' model params for our final model.
+knn_final_workflow <- 
+  knn_workflow |>
+  tune::finalize_workflow(knn_best_fit)
+
+# Fit our model using the 'best' params.
+knn_final_fit <- 
+  knn_final_workflow |> 
+  tune::last_fit(data_split)
+
+# Stop clusters.
+parallel::stopCluster(clusters)
+
+# Stop timer.
+tictoc::toc()
+
+# Choose the best model params.
+knn_res |> tune::select_best(metric = 'roc_auc')
+
+```
+
+
+```{r}
+# knn_res |> tune::collect_metrics()
+# knn_final_fit |> tune::collect_metrics()
+
+```
+
+### Model Performance
+
+We then apply our selected model to the test set. The final metrics are given in @tbl-knn-perform.
+
+```{r, cache=TRUE, echo=TRUE}
+
+# Use the best fit to make predictions on the test data.
+knn_pred <- 
+  knn_final_fit |> 
+  tune::collect_predictions() |>
+  dplyr::mutate(truth = factor(.pred_class))
+
+```
+
+
+```{r}
+#| label: tbl-knn-perform
+#| tbl-cap: 'KNN Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+#| tbl-alt: 'KNN Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+
+# Prepare table's theme.
+theme <- reactable::reactableTheme(
+  borderColor = "#dfe2e5",
+  stripedColor = "#f6f8fa", 
+  highlightColor = "#f0f5f9",
+  cellPadding = "8px 12px"
+)
+
+# Create metrics table.
+knn_metrics_table <- list(
+  'Accuracy' = yardstick::accuracy_vec(truth = knn_pred[['.pred_class']],
+                                       estimate = test_outcome),
+  'Precision' = yardstick::precision_vec(truth = knn_pred[['.pred_class']],
+                                         estimate = test_outcome),
+  'Recall' = yardstick::recall_vec(truth = knn_pred[['.pred_class']],
+                                   estimate = test_outcome),
+  'Specificity' = yardstick::specificity_vec(truth = knn_pred[['.pred_class']],
+                                            estimate = test_outcome)
+) |>
+  dplyr::bind_cols() |>
+  tidyr::pivot_longer(cols = dplyr::everything(), names_to = 'Metric', values_to = 'Value') |>
+  dplyr::mutate(Value = round(Value*100, 1))
+
+readr::write_csv(x = knn_metrics_table, file = here::here('data', 'knn-metrics.csv'))
+
+knn_metrics_table |>
+  dplyr::mutate(Value = paste0(Value, '%')) |>
+  reactable::reactable(
+    searchable = FALSE, 
+    resizable = TRUE,
+    onClick = "expand",
+    bordered = TRUE,
+    highlight = TRUE, 
+    compact = TRUE,
+    height = "auto",
+    theme = theme
+  )
+
+```
