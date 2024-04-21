@@ -1,0 +1,175 @@
+## Random Forest
+
+### Model Description
+
+
+### Model Workflow
+
+```{r}
+# Read cleaned data.
+cleaned_data <- readr::read_csv(here::here('data', 'cleaned-data.csv'))
+```
+
+
+```{r rf-data-split, cache=TRUE}
+
+# Initialize a random number generator.
+set.seed(314)
+
+# Split data into training and test sets.
+data_split <- rsample::initial_split(cleaned_data)
+train_data <- rsample::training(data_split)
+test_data <- rsample::testing(data_split)
+
+# Split the training data into 10 folds for cross-validation.
+data_cross_val <- rsample::vfold_cv(train_data)
+
+# Set aside the outcome column of the sample test data.
+test_outcome <- 
+  factor(test_data$Recurred)
+
+```
+
+
+```{r rf-data-recipes, cache=TRUE}
+library(tidymodels)
+
+# Create recipe for the data prep.
+data_rec <- recipes::recipe(Recurred ~ ., data = train_data) |>
+  recipes::step_corr(threshold = 0.6) |>
+  recipes::step_normalize(recipes::all_numeric()) |>
+  recipes::step_dummy(recipes::all_nominal_predictors())
+
+```
+
+
+
+```{r rf-workflow, cache=TRUE}
+
+# Create model specification.
+rf_model_spec <- 
+  rand_forest(
+    mtry = tune(),
+    trees = 1000,
+    min_n = tune()
+  ) %>%
+  set_mode("classification") %>%
+  set_engine("ranger")
+
+# Create model workflow.
+rf_workflow <- workflows::workflow() |>
+  workflows::add_model(rf_model_spec) |>
+  workflows::add_recipe(data_rec)
+
+```
+
+### Model Tuning and Fitting
+
+
+```{r rf-param-tunning, cache=TRUE, warning=FALSE, echo=TRUE}
+
+#' Check number of available cores.
+cores_no <- parallel::detectCores() - 1
+
+#' Start timer.
+tictoc::tic()
+
+# Create cores_no clusters.
+clusters <- parallel::makeCluster(cores_no)
+
+# Start clusters.
+doParallel::registerDoParallel(clusters)
+
+# Fine-tune the model params.
+rf_res <- tune::tune_grid(
+  object = rf_workflow,
+  preprocessor = rf_model_spec,
+  resamples = data_cross_val,
+  control = tune::control_resamples(save_pred = TRUE)
+)
+
+# Select 'best' fit (in terms of accuracy).
+rf_best_fit <- 
+  rf_res |> 
+  tune::select_best(metric = 'accuracy')
+
+# Use the 'best' model params for our final model.
+rf_final_workflow <- 
+  rf_workflow |>
+  tune::finalize_workflow(rf_best_fit)
+
+# Fit our model using the 'best' params.
+rf_final_fit <- 
+  rf_final_workflow |> 
+  tune::last_fit(data_split)
+
+# Stop clusters.
+parallel::stopCluster(clusters)
+
+# Stop timer.
+tictoc::toc()
+
+# Choose the best model params.
+rf_res |> tune::select_best(metric = 'roc_auc')
+
+```
+
+### Model Performance
+
+We then apply our selected model to the test set. The final metrics are given in @tbl-rf-performance.
+
+```{r, cache=TRUE, echo=TRUE}
+
+# Use the best fit to make predictions on the test data.
+rf_pred <- 
+  rf_final_fit |> 
+  tune::collect_predictions() |>
+  dplyr::mutate(truth = factor(.pred_class))
+
+```
+
+
+```{r}
+#| label: tbl-rf-performance
+#| tbl-cap: 'Random Forest Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+#| tbl-alt: 'Random Forest Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+
+# Prepare table's theme.
+theme <- reactable::reactableTheme(
+  borderColor = "#dfe2e5",
+  stripedColor = "#f6f8fa", 
+  highlightColor = "#f0f5f9",
+  cellPadding = "8px 12px"
+)
+
+# Create metrics table.
+rf_metrics_table <- list(
+  'Accuracy' = yardstick::accuracy_vec(truth = rf_pred[['.pred_class']],
+                                       estimate = test_outcome),
+  'Precision' = yardstick::precision_vec(truth = rf_pred[['.pred_class']],
+                                         estimate = test_outcome),
+  'Recall' = yardstick::recall_vec(truth = rf_pred[['.pred_class']],
+                                   estimate = test_outcome),
+  'Specificity' = yardstick::specificity_vec(truth = rf_pred[['.pred_class']],
+                                            estimate = test_outcome)
+) |>
+  dplyr::bind_cols() |>
+  tidyr::pivot_longer(cols = dplyr::everything(), names_to = 'Metric', values_to = 'Value') |>
+  dplyr::mutate(Value = round(Value*100, 1))
+
+readr::write_csv(x = rf_metrics_table, file = here::here('data', 'rf-metrics.csv'))
+
+rf_metrics_table |>
+  dplyr::mutate(Value = paste0(Value, '%')) |>
+  reactable::reactable(
+    searchable = FALSE, 
+    resizable = TRUE,
+    onClick = "expand",
+    bordered = TRUE,
+    highlight = TRUE, 
+    compact = TRUE,
+    height = "auto",
+    theme = theme
+  )
+
+```

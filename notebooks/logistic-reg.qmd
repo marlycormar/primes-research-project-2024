@@ -1,0 +1,172 @@
+## Logistic Regression
+
+### Model Description
+
+
+### Model Workflow
+
+```{r}
+# Read cleaned data.
+cleaned_data <- readr::read_csv(here::here('data', 'cleaned-data.csv'))
+```
+
+
+```{r lr-data-split, cache=TRUE}
+
+# Initialize a random number generator.
+set.seed(314)
+
+# Split data into training and test sets.
+data_split <- rsample::initial_split(cleaned_data)
+train_data <- rsample::training(data_split)
+test_data <- rsample::testing(data_split)
+
+# Split the training data into 10 folds for cross-validation.
+data_cross_val <- rsample::vfold_cv(train_data)
+
+# Set aside the outcome column of the sample test data.
+test_outcome <- 
+  factor(test_data$Recurred)
+
+```
+
+
+```{r lr-data-recipes, cache=TRUE}
+library(tidymodels)
+
+# Create recipe for the data prep.
+data_rec <- recipes::recipe(Recurred ~ ., data = train_data) |>
+  recipes::step_corr(threshold = 0.6) |>
+  recipes::step_normalize(recipes::all_numeric()) |>
+  recipes::step_dummy(recipes::all_nominal_predictors())
+
+```
+
+
+
+```{r lr-workflow, cache=TRUE}
+
+# Create model specification.
+# Setting mixture = 1 means that the glmnet model will potentially remove irrelevant predictors and choose a simpler model.
+lr_model_spec <-
+  parsnip::logistic_reg(penalty = tune(), mixture = 1) |>
+  parsnip::set_mode('classification') |>
+  parsnip::set_engine('glmnet')
+
+# Create model workflow.
+lr_workflow <- workflows::workflow() |>
+  workflows::add_model(lr_model_spec) |>
+  workflows::add_recipe(data_rec)
+
+```
+
+### Model Tuning and Fitting
+
+
+```{r lr-param-tunning, cache=TRUE, warning=FALSE, echo=TRUE}
+
+#' Check number of available cores.
+cores_no <- parallel::detectCores() - 1
+
+#' Start timer.
+tictoc::tic()
+
+# Create cores_no clusters.
+clusters <- parallel::makeCluster(cores_no)
+
+# Start clusters.
+doParallel::registerDoParallel(clusters)
+
+# Fine-tune the model params.
+lr_res <- tune::tune_grid(
+  object = lr_workflow,
+  preprocessor = lr_model_spec,
+  resamples = data_cross_val,
+  control = tune::control_resamples(save_pred = TRUE)
+)
+
+# Select 'best' fit (in terms of accuracy).
+lr_best_fit <- 
+  lr_res |> 
+  tune::select_best(metric = 'accuracy')
+
+# Use the 'best' model params for our final model.
+lr_final_workflow <- 
+  lr_workflow |>
+  tune::finalize_workflow(lr_best_fit)
+
+# Fit our model using the 'best' params.
+lr_final_fit <- 
+  lr_final_workflow |> 
+  tune::last_fit(data_split)
+
+# Stop clusters.
+parallel::stopCluster(clusters)
+
+# Stop timer.
+tictoc::toc()
+
+# Choose the best model params.
+lr_res |> tune::select_best(metric = 'roc_auc')
+
+```
+
+### Model Performance
+
+We then apply our selected model to the test set. The final metrics are given in @tbl-lr-performance.
+
+```{r, cache=TRUE, echo=TRUE}
+
+# Use the best fit to make predictions on the test data.
+lr_pred <- 
+  lr_final_fit |> 
+  tune::collect_predictions() |>
+  dplyr::mutate(truth = factor(.pred_class))
+
+```
+
+
+```{r}
+#| label: tbl-lr-performance
+#| tbl-cap: 'Logistic Regression Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+#| tbl-alt: 'Logistic Regression Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+
+# Prepare table's theme.
+theme <- reactable::reactableTheme(
+  borderColor = "#dfe2e5",
+  stripedColor = "#f6f8fa", 
+  highlightColor = "#f0f5f9",
+  cellPadding = "8px 12px"
+)
+
+# Create metrics table.
+lr_metrics_table <- list(
+  'Accuracy' = yardstick::accuracy_vec(truth = lr_pred[['.pred_class']],
+                                       estimate = test_outcome),
+  'Precision' = yardstick::precision_vec(truth = lr_pred[['.pred_class']],
+                                         estimate = test_outcome),
+  'Recall' = yardstick::recall_vec(truth = lr_pred[['.pred_class']],
+                                   estimate = test_outcome),
+  'Specificity' = yardstick::specificity_vec(truth = lr_pred[['.pred_class']],
+                                            estimate = test_outcome)
+) |>
+  dplyr::bind_cols() |>
+  tidyr::pivot_longer(cols = dplyr::everything(), names_to = 'Metric', values_to = 'Value') |>
+  dplyr::mutate(Value = round(Value*100, 1))
+
+readr::write_csv(x = lr_metrics_table, file = here::here('data', 'lr-metrics.csv'))
+
+lr_metrics_table |>
+  dplyr::mutate(Value = paste0(Value, '%')) |>
+  reactable::reactable(
+    searchable = FALSE, 
+    resizable = TRUE,
+    onClick = "expand",
+    bordered = TRUE,
+    highlight = TRUE, 
+    compact = TRUE,
+    height = "auto",
+    theme = theme
+  )
+
+```
