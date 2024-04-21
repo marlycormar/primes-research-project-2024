@@ -92,7 +92,7 @@ The `recipes` package is useful to create a blueprint of the pre-processing step
 - the numeric features should be normalized, and
 - the categorical variables should be transformed into numerical variables.
 
-```{r data-recipes, echo=TRUE}
+```{r data-recipes, echo=TRUE, eval=FALSE}
 
 # Create recipe for the data prep.
 data_rec <- recipes::recipe(Recurred ~ ., data = train_data) |>
@@ -106,6 +106,9 @@ data_rec <- recipes::recipe(Recurred ~ ., data = train_data) |>
 {{< include notebooks/knn.qmd >}}
 {{< include notebooks/svm.qmd >}}
 {{< include notebooks/ann.qmd >}}
+{{< include notebooks/logistic-reg.qmd >}}
+{{< include notebooks/gbm.qmd >}}
+{{< include notebooks/random-forest.qmd >}}
 
 # Model Comparison
 
@@ -128,7 +131,13 @@ models_performance <-
     readr::read_csv('data/svm-metrics.csv') |>
       dplyr::mutate('Model' = 'SVM', .before = 1),
     readr::read_csv('data/ann-metrics.csv') |>
-      dplyr::mutate('Model' = 'ANN', .before = 1)
+      dplyr::mutate('Model' = 'ANN', .before = 1),
+    readr::read_csv('data/lr-metrics.csv') |>
+      dplyr::mutate('Model' = 'Logistic Regression', .before = 1),
+    readr::read_csv('data/gbm-metrics.csv') |>
+      dplyr::mutate('Model' = 'XGBoost', .before = 1),
+    readr::read_csv('data/rf-metrics.csv') |>
+      dplyr::mutate('Model' = 'Random Forest', .before = 1)
   ) %>%
   dplyr::group_by(Metric) %>%
   dplyr::filter(Value == max(Value))
@@ -141,7 +150,7 @@ spe_best <- models_performance |> dplyr::filter(Metric == 'Specificity')
 ```
 
 
-The best performing model in terms of all metrics was KNN, with a `r acc_best$Value`% accuracy, `r prec_best$Value`% precision, `r rec_best$Value`% recall, and `r spe_best$Value`% specificity.
+The best performing model in terms of all metrics was ???, with a `r acc_best$Value`% accuracy, `r prec_best$Value`% precision, `r rec_best$Value`% recall, and `r spe_best$Value`% specificity.
 
 <!-- ```{r model-metrics} -->
 <!-- #| label: tbl-overall-performance -->
