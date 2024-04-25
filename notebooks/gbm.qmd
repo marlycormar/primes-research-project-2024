@@ -1,7 +1,20 @@
 ## Gradient Boosting Machines (GBMs) - XGBoost
 
 ### Model Description
+Gradient boosting is an ensemble learning method, meaning that it combines the results of multiple different models (generally decision trees) into one. It does this sequentially, involving function minimization with gradient descent (hence the name). XGBoost, or eXtreme Gradient Boosting, is a popular algorithm for gradient boosting. It is designed to be efficient, flexible, and portable. It employs regularization techniques to prevent overfitting, and allows users to define their own object functions, making it adaptable to various types of supervised learning tasks, including regression, classification, and ranking problems. XGBoost also uses a technique called tree pruning to control the complexity of individual trees within the ensemble, preventing them from growing too deep and reducing the likelihood of overfitting.
 
+Let's dive into the details. Consider the following flowchart of the model, from @xgboostarticle.
+
+```{r}
+#| label: fig-xgboost-overview
+#| fig-cap: 'Flowchart of the XGBoost algorithm.'
+
+knitr::include_graphics(here::here('images/XGBoost.png'))
+```
+
+We start with a simple model that returns a constant value (a tree with a single leaf node), $f_0(X)$. It then learns a new model $f_1(X, \theta_1)$ which fits the residual of $f_0(X)$. Then, for $2\le i\le k$, where $k$ is the pre-decided number of iterations, we compute the new model $f_i(X, \theta_i)$ that fits the residual of $f_{i-1}(X, \theta_i)$. The resulting model is $\hat{Y}=\sum_{i=1}^k f_i(X,\theta_i)$, the sum of the predictions from each model. The key step is how each $f_i$ model is recursively computed to fit the residual of the previous model. We need a loss function $L(Y, f(X))$ and a learning rate $\alpha$. At each step, we compute the gradient and hessian $\hat{g}_i$ and $\hat{h}_i$ by taking the first and second partial derivatives (respectively) of $L(Y, f_{i-1}(X))$ with respect to $f_{i-1}(x)$. We then compute the function $\theta_i$ with a minimization problem:
+$$\theta_i(X)=\arg\min\sum_{x\in X}\hat{h}_m(x)\left(\theta_i(x)-\frac{\hat{g}_i(x)}{\hat{h}_i(x)}\right)^2.$$
+The new function $f_i$ is now computed as $f_{i-1}(X) + \alpha\theta_i(X)$. 
 
 ### Model Workflow
 
