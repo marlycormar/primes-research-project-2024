@@ -1,13 +1,33 @@
 ## Logistic Regression
 
 ### Model Description
+Logistic regression for binary classification is a supervised algorithm which predicts the probability a data point $X$ belongs to each category. This model is essentially a modification of the linear regression model to instead output probabilities by applying the softmax function. Let "$1$" represent the "positive" class and "$0$" represent the "negative" class. The probability of $X$ belonging to the category "$1$" is given as
+$$p(X) = p(Y = 1 \mid X) = \text{Softmax}(\beta_0 + \beta_1X_1 + \dots + \beta_pX_p) = \frac{e^{\beta_0 + \beta_1 X_1 + \dots + \beta_p X_p}}{1 + e^{\beta_0 + \beta_1X_1 + \dots + \beta_p X_p}},$$
+where $\beta_0, \beta_1, \dots, \beta_p$ are parameters to be estimated. 
+We classify $X$ as "positive" if $p(X) > 0.5$.
+
+By construction, we have
+$$\frac{p(X)}{1 - p(X)} = e^{\beta_0 + \beta_1X_1 + \dots \beta_pX_p},$$
+and the quantity is called the "odds" -- as it denotes the estimated probability of recurrence over no recurrence. It follows that the quantity
+$$\log\left(\frac{p(X)}{1 - p(X)}\right) = \beta_0 + \beta_1X_1 + \dots \beta_pX_p$$
+called the "log odds" is linear.
+
+
+We find the optimal parameters using the maximum likelihood function
+$$L(\beta_0, \dots, \beta_p) = \prod_{i: y_i = 1}p(x_i) \prod_{j: y_j = 0}(1 - p(x_j)).$$
+(Note that this maximizes the probability of the observed training data.)
+
+Or equivalently, we want to maximize the *log likelihood function*
+$$LLF = \sum_{i = 1}^n \left[y_i\log(p(x_i)) + (1 - y_i)\log(1 - p(x_i))\right].$$
+
+
 
 
 ### Model Workflow
 
 ```{r}
 # Read cleaned data.
-cleaned_data <- readr::read_csv(here::here('data', 'cleaned-data.csv'))
+cleaned_data <- readr::read_csv(here::here('Thyroid_Diff.csv'))
 ```
 
 
