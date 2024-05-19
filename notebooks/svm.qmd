@@ -2,83 +2,15 @@
 
 ### Model Description
 
-In this section, we provide an overview of the Support Vector Machine (SVM) algorithm and how it is used.
+The Support Vector Machine (SVM) is an efficient approach for classification developed in the 1990s. The SVM generates a hyper-plane or curve that splits the hyper-space into a Yes region (cancer recurs) and a No region (cancer doesn't recur). Given a test observation, its classification is based on the region that it falls in.
 
-Roughly speaking, the SVM model generates a hyper-plane or curve that splits the hyper-space into a Yes region (cancer recurs) and a No region (cancer doesn't recur). If a given a new patient represented by sample point falls in the Yes region, it is likely that the patient's cancer will recur. If the point falls in the No region, it is likely that the patient's cancer will not recur. We will refer to the Yes region as the class $1$ and the No region as the class $-1$.
+Now we explain how SVM works in detail. First, consider the special case in which there is a roughly linear decision boundary between the training observations in one category and those in the other category. In this case, the simpler support vector classifier can be used: generate a hyperplane $\beta_0+\beta_1 x_{i1}+\dots + \beta_p x_{ip}=0$ that mostly separates the two categories by solving the optimization problem of maximizing $M$, the width of the margin, subject to the conditions:
 
-### Maximal Margin Classifier
+1.  $\sum_{j=1}^p \beta_j^2 = 1$
+2.  $y_i(\beta_0+\beta_1 x_{i1}+\dots + \beta_p x_{ip}) \ge M(1-\epsilon_i)$
+3.  $\epsilon_i \ge 0$ and $\sum_{i=1}^n \epsilon_i \le C$.
 
-SVM is a generalization of the simple "maximal margin classifier." Suppose we are given training observations $x_1,\dots, x_n$ in a $p$-dimensional space, and each is in one of two classes: $1$ and $-1$. Based on the training observations, we would like to develop a classifier that correctly classifies an arbitrary test observation $x^*$. For each observation $x_i$, the value of its $j$th feature is denoted by $x_{ij}$.
-
-The idea is to construct a hyperplane that exactly separates the training observations so that those labeled $1$ are on one side and those labeled $-1$ are on the other. In other words,
-
-  - $\beta_0+\beta_1x_{i1}+\dots+\beta_px_{ip} > 0$ if the observation is labeled with $1$
-  - $\beta_0+\beta_1x_{i1}+\dots+\beta_px_{ip} < 0$ if the observation is labeled with $-1$.
-
-Thus, we can classify $x^*$ using the sign of $f(x^*) = \beta_0 + \beta_1x_1^* + \dots + \beta_px_p^*$, where we put it in class $1$ if $f(x^*)$ is positive and class $-1$ otherwise. The magnitude of $f(x^*)$ tells us more: greater $|f(x^*)|$ indicates that the point is farther from the hyperplane, so we are more confident in our classification.
-
-Notice that when a separating hyperplane exists, there will actually be an infinite number of such hyperplanes. Define the *margin* of a hyperplane to be the minimum distance from a training observation to the hyperplane. Thus, we can define the *maximal margin classifier* to be the hyperplane with the maximum margin.
-
-### Support Vector Classifier
-
-The maximal margin classifier has two limitations: firt, a separating hyperplane does not always exist and second, it is very sensitive to outliers. For example, in @fig-limitation (modified from @james2021), the training observations are in the blue class or purple class, and the black point is a test observation. Originally, the maximal margin classifier puts the test observation in the purple class (see the left plot in @fig-limitation). After an outlier blue training observation is added, the maximal margin classifier line changes significantly and puts the test observation in the blue class (see the right plot in @fig-limitation), which may be undesirable because the test observation is much closer to the majority of purple points.
-
-```{r}
-#| label: fig-limitation
-#| fig-cap: 'Limitations of the Maximal Margin Classifier.'
-
-knitr::include_graphics(here::here('images/MaxMarginLimitations.png'))
-```
-
-Hence, we generalize the maximal margin classifier to the "support vector classifier," which works in the non-separable case and is not sensitive to outliers. In the support vector classifier, a hyperplane $\beta_0+\beta_1 x_{i1}+\dots + \beta_p x_{ip}=0$ that mostly separates the classes is constructed. A few observations could be either on the wrong side of the hyperplane or have a margin that is too small. See @fig-svclassifier for more details.
-
-```{r}
-#| label: fig-svclassifier
-#| fig-cap: 'Support Vector Classifier.'
-
-knitr::include_graphics(here::here('images/SupportVectorClassifier.png'))
-```
-
-This hyperplane can be found by solving the following optimization problem: $\text{maximize}_{\beta_0, \dots, \beta_p, \epsilon_1, \dots, \epsilon_n, M}M$ subject to the conditions
-
-  1.  $\sum_{j=1}^p \beta_j^2 = 1$
-  2.  $y_i(\beta_0+\beta_1 x_{i1}+\dots + \beta_p x_{ip}) \ge M(1-\epsilon_i)$
-  3.  $\epsilon_i \ge 0$ and $\sum_{i=1}^n \epsilon_i \le C$.
-
-The goal of the optimization problem is to choose parameters that maximize $M$, the width of the margin.
-
-Condition 1 requires that the sum of the squares of the coefficients equals 1. Notice that if this condition holds, then the signed distance from any point $x_i$ to the hyperplane simplifies to
-
-$$
-\frac{\beta_0+\beta_1 x_{i1} + \dots + \beta_p x_{ip}}{\sqrt{ \beta_0^2+\dots+\beta_p^2}} = \beta_0+\beta_1 x_{i1} + \dots + \beta_p x_{ijp}.
-$$
-
-Condition 2 requires that each training observation is "far enough" from the hyperplane. For each training observation $x_i$, $y_i$ equals $1$ if it is in one class and $-1$ if it is in the other class, so $y_i(\beta_0+\beta_1 x_{i1}+\dots + \beta_p x_{ip})$ is the unsigned distance of the observation to the hyperplane. Thus, condition 2 means that each training observation must have distance of at least $M(1-\epsilon_i)$ from the hyperplane.
-    
-Here $\epsilon_i$ is a small error term, where $\epsilon_i=0$ means that the $i$th observation is on the correct side of the margin, $\epsilon_i>0$ means that it is on the wrong side of the margin, and $\epsilon_i>1$ means that it is on the wrong side of the hyperplane. 
-
-Condition 3 requires that all error terms $\epsilon_i$ are non-negative and their sum is at most $C$, where $C$ is tuning parameter that we can choose when applying the support vector classifier. Higher $C$ corresponds to higher tolerance of violations of the margin.
-
-A key property of the support vector classifier is that the only observations that affect the hyperplane are the ones on the margin or violating it; these observations are called "support vectors." In other words, if we move around any other observation so that it is still on the correct side, the hyperplane remains unchanged. This is an advantage because unlike other classifying methods, the support vector classifier is not sensitive to extreme observations.
-
-### Support Vector Machine
-
-A drawback of the support vector classifier is that when the data has non-linear decision boundaries (e.g., one cluster of the blue class, one cluster of the purple class, and one cluster of the blue class), a single application of the support vector classifier cannot clearly delineate the two classes. Hence, the support vector machine is developed to automatically adapt the support vector classifier for non-linear decision boundaries.
-
-The idea is to enlarge the feature space using "kernels." First, observe that the support vector classifier can be computed entirely in terms of inner products of the observations, where the inner product of two observations $x_a, x_b$ is denoted by $\langle x_a, x_b \rangle = \sum_{i=1}^p x_{ai}x_{bi}$. For the SVM, we replace the inner product by a generalization $K(x_a, x_b)$, called the kernel. Let us go over two common kernels: the polynomial kernel and the radial kernel.
-
-The _polynomial kernel_ is defined as $K(x_a, x_b) = (1+\sum_{i=1}^p x_{ai}x_{bi})^d$ for some positive integer $d$. Essentially, an SVM with the polynomial kernel maps the observations into a higher-dimensional space (with polynomials of degree $d$) and then fits a support vector classifier to it.
-
-Moreover, the _radial kernel_ is defined as $K(x_a, x_b) = \text{exp}(-\gamma \sum_{i=1}^p (x_{ai}-x_{bi})^2)$ for some positive constant $\gamma$. When classifying the test observation $x^*$, the radial kernel prioritizes nearby training observations. More precisely, the closer $x^*$ is from a training observation $x_a$, the smaller the distance $\sum_{i=1}^p (x_{ai} - x_i^*)^2$, the larger the radial kernel $K(x_a, x^*)$, and so the more important $x_a$ will be in determining $f(x^*)$.
-
-The @fig-svm-kernels shows data with a non-linear boundary between the blue (class $1$) and purple (class $-1$) points. The left side shows the black boundary curves generated by an SVM with a polynomial kernel of degree $3$, and the right side shows the circular black boundary generated by an SVM with a radial kernel. In this case, both kernels work well to split the two classes.
-
-```{r}
-#| label: fig-svm-kernels
-#| fig-cap: 'Using Kernels to Determine a Non-Linear Boundary Between Classes.'
-
-knitr::include_graphics(here::here('images/Kernels.png'))
-```
+Here each $\epsilon_i$ is a small error term, and $C$ is tuning parameter for which larger $C$ corresponds to higher tolerance of violations of the margin. Finally, in the case of a non-linear decision boundary, SVM maps the training data into a higher-dimensional space using kernels. Two common kernels are the polynomial kernel, which maps each observation via a polynomial of degree $d$, and the radial kernel, which maps each observation via its distance from a point. Then the support vector classifier can be applied.
 
 ### Model Workflow
 
