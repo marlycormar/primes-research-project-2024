@@ -2,52 +2,11 @@
 
 ### Model Description
 
-The K-Nearest Neighbors (KNN) algorithm is a nonparametric algorithm which classifies a given sample using the $k$ nearest training data points. For a given point $X$ in the plane we want to classify, the probability that its label $\hat{Y}$ equals a given $j$ is:
+The K-Nearest Neighbors (KNN) algorithm is a nonparametric algorithm which classifies a given sample using the training data as a proximity reference. Given the training data, the algorithm classifies a point $X$ as the most common class label among its $k$ nearest training data points, where $k$ is a predetermined hyperparameter. The KNN classifier simply uses neighboring points to draw conclusions about a given point -- and so no model training takes place; the algorithm just memorizes the training data itself (this is usually referred to as a "lazy" algorithm).
 
-$$
-P(\hat{Y} = j) = \frac{1}{k}\sum_{s \in N} I(Y_s = j),
-$$
+The parameters of the classifier are the hyper-parameters $k$, the distance measure, and the weight function. Common examples distance measure used are the Euclidean distance, Manhattan distance, and Minkowski distance. The performance of the KNN classifier is obviously dependent on $k$ -- and generally, the optimal value of $k$ depends on the *bias-variance tradeoff*. Small values of $k$ result in low bias, but high variance, which means the training error is low, but test error is high. On the other hand, large values of $k$ result in high bias, but low variance. This means that the training error itself is high, but the training and test performances are comparable, and so the model underfits. Also, it is recommended to choose $k$ such that no classification ties are possible. When we have two classes (like we do here), this means choosing an odd $k$.To increase model flexibility, we may use also a weighted version of the KNN algorithm (where each of the $k$ nearest neighbors is weighted inversely based on the distance from the test point). We tune each of these three parameters below.
 
-where $N$ is the set of the $k$-nearest neighbors from $X$ (in our training data) and $Y_s$ denotes the true label of point $s$. We classify $X$ as the majority label of the elements of $N$. A brief illustration of how this works is shown in @fig-knn-overview.
 
-```{r}
-#| label: fig-knn-overview
-#| fig-cap: 'High-level description of the KNN algorithm.'
-
-knitr::include_graphics(here::here('images/knn-image.png'))
-```
-
-The algorithm uses neighboring points to draw conclusions about a given point. Note that no model training takes place; the algorithm just memorizes the training data itself (this is usually referred to as a "lazy" algorithm).
-
-The parameters of the classifier are the hyper-parameters $k$, the distance measure, and the weight function.
-
-### Distance Measure
-
-In the usual case of numerical predictors, the examples of common distance measures used to get the $k$ neighbors are the Euclidean distance, the Manhattan distance, and the Minkowsky distance.
-
-The classifier is very sensitive to the scaling of the variables. Therefore, it's crucial to normalize all numerical predictors so that each one is equally weighted.
-
-### Bias-Variance Tradeoff
-
-The performance of the KNN classifier is dependent on $k$. For example, setting $k = 1$ simply assigns each point to the class of the single nearest neighbor, while large values of $k$ "smoothen" the classifying boundary. Generally, the optimal value of $k$ depends on the *bias-variance tradeoff*. Small values of $k$ result in low bias, but high variance. In this case, the training error is low, but the model overfits. On the other hand, large values of $k$ result in high bias, but low variance. This means that the training error itself is high, but the training and test performances are comparable, and so the model underfits.
-
-Also, it is recommended to choose $k$ such that no classification ties are possible. When we have two classes (like we do here), this means choosing an odd $k$.
-
-Note that the decision boundary of this model is formed by the intersections of different hyperplanes, which gets more complex as $k$ increases.
-
-### Curse of Dimensionality
-
-Although KNN may perform well when there is a small number of parameters, for a large number of parameters the model suffers from *the curse of dimensionality*.
-
-This refers to the many difficulties that arise when we have high dimensional data. First, as the number of dimensions increases, the size of the data space increases exponentially and hence, the probability that some point is at most a given distance from the query point decreases exponentially. So we effectively increase the sample size exponentially when we add a new dimension.
-
-Also, in higher dimensions, the distances from the nearest and furthest points become pretty similar and so the classifier loses importance. 
-
-As such, it is important to reduce the dimensions of the data before applying this model. Since our data is relatively low-dimensional and given the nature of our predictors, the KNN performs well using the entire data set.
-
-### Weighted Function
-
-To improve model perforance, we can use a weighted version of the KNN algorithm: each of the $k$ nearest neighbors is weighted based on the distance from the test point. Note that the weighting of a neighbor would be inversely proportional to the distance. In general, this makes the classifier more flexible and adaptable to the local structure of the data.
 
 ### Model Workflow
 
