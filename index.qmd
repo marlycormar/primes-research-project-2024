@@ -1,5 +1,5 @@
 ---
-title: 'Enhancing Differentiated Thyroid Cancer Recurrence Prediction through Machine Learning: A Comparative Analysis of ANN, KNN, and SVM'
+title: 'Enhancing Differentiated Thyroid Cancer Recurrence Prediction through Machine Learning: A Comparative Analysis of ANN, KNN, SVM, Logistic Regression, and Two Ensemble Methods'
 author:
   - name: Anay Aggarwal
     affiliations: MIT PRIMES
@@ -15,9 +15,12 @@ keywords:
   - Machine Learning
   - ANN
   - KNN
-  - SVN
+  - SVM
+  - Logistic Regression
+  - XGBoost
+  - Random Forest
 abstract: |
-  This study assesses the efficacy of machine learning algorithms—Artificial Neural Networks, Support Vector Machines, and K-Nearest Neighbors—in predicting recurrence in Differentiated Thyroid Cancer (DTC). Using a comprehensive dataset from the UCI Machine Learning Repository, we conduct a comparative analysis of these algorithms based on key performance metrics. Our investigation seeks to identify the optimal model for enhancing DTC recurrence predictions, aiming to advance personalized treatment strategies and improve clinical outcomes in thyroid cancer care.
+  This study assesses the efficacy of machine learning algorithms—Artificial Neural Networks, K-Nearest Neighbors, Support Vector Machines, Logistic Regression, XGBoost, and Random Forest—in predicting recurrence in Differentiated Thyroid Cancer (DTC). Using a comprehensive dataset from the UCI Machine Learning Repository, we conduct a comparative analysis of these algorithms based on key performance metrics. Our investigation seeks to identify the optimal model for enhancing DTC recurrence predictions, aiming to advance personalized treatment strategies and improve clinical outcomes in thyroid cancer care.
 date: last-modified
 bibliography: references.bib
 citation:
@@ -112,15 +115,15 @@ data_rec <- recipes::recipe(Recurred ~ ., data = train_data) |>
 
 # Model Comparison
 
-To assess model performance, we will compare the accuracy, precision, recall, and specifity metrics of our models. These metrics are defined as follows.
+To assess model performance, we will compare the accuracy, precision, recall, and specificity metrics of our models. These metrics are defined as follows.
 
 - Accuracy: proportion of correct predictions for the test data or $\frac{TN + TP}{TN + TP + FN + FP}$. 
 
-- Specificity: proportion of correctly classified negative observations among all truth negative observations or $\frac{TN}{TN + FP}$.
+- Precision: proportion of correctly classified positive observations among all observations that are classified as positive by the model or $\frac{TP}{TP + FP}$.
 
 - Recall: proportion of correctly classified positive observations among all actual positive observations or $\frac{TP}{TP + FN}$.
 
-- Precision: proportion of correctly classified positive observations among all observations that are classified as positive by the model or $\frac{TP}{TP + FP}$.
+- Specificity: proportion of correctly classified negative observations among all truth negative observations or $\frac{TN}{TN + FP}$.
 
 ```{r}
 
@@ -236,7 +239,7 @@ The data is available at the UC Irvine Machine Learning Repository @ucidata. For
 <!----------------------------------------------------------------------------->
 # Ackcnowledgments
 
-I kindly thank my PRIMES mentor, Marly Gotti, for her guidance throughout the reading period. I am also grateful to the PRIMES organizers for making this program possible.
+We thank our PRIMES mentor, Marly Gotti, for her guidance throughout the reading and research periods. We are also grateful to the PRIMES organizers for making this program possible.
 
 <!----------------------------------------------------------------------------->
 <!--------------------------- ## CONFLICTS ------------------------------------>
