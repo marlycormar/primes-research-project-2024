@@ -20,7 +20,7 @@ raw_data <- readr::read_csv(here::here('data/raw-data.csv'))
 
 The "Differentiated Thyroid Cancer Recurrence" dataset encompasses `r nrow(raw_data)` samples or observations, and a range of `r ncol(raw_data)` variables pertinent to thyroid cancer, including patient demographics, clinical features, and pathological details, all aimed at elucidating patterns associated with cancer recurrence.
 
-We will employ three distinct modeling methods to analyze our dataset: Artificial Neural Networks (ANN), K-Nearest Neighbors (KNN), and Support Vector Machines (SVM). Each of these methods brings unique strengths to the analysis, with ANN providing deep learning capabilities, KNN offering simplicity and ease of interpretation, and SVM delivering powerful discriminative classification, thereby encompassing a comprehensive approach to predicting cancer recurrence in the studied dataset.
+We will employ six distinct modeling methods to analyze our dataset: Artificial Neural Networks (ANN), K-Nearest Neighbors (KNN), Support Vector Machines (SVM), Logistic Regression (LR), Random Forests (RF), and Extreme Gradient Boosting (XGBoost). Each of these methods brings unique strengths to the analysis, with ANN providing deep learning capabilities, KNN offering simplicity and ease of interpretation, SVM delivering powerful discriminative classification, LR providing an intuitive and easily trainable implementation, and the ensemble methods RF and XGBoost offering highly robust and accurate tree algorithms -- thereby encompassing a comprehensive approach to predicting cancer recurrence in the studied dataset.
 
 To prepare our data for modeling, we start by fixing a typo and transforming the categorical variables into factors.
 

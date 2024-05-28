@@ -8,7 +8,7 @@ We classify $X$ as "positive" if $p(X) > 0.5$.
 
 By construction, we have
 $$\frac{p(X)}{1 - p(X)} = e^{\beta_0 + \beta_1X_1 + \dots \beta_pX_p},$$
-and the quantity is called the "odds" -- as it denotes the estimated probability of recurrence over no recurrence. It follows that the quantity
+and this quantity is called the "odds" -- as it denotes the estimated probability of recurrence over no recurrence. It follows that the quantity
 $$\log\left(\frac{p(X)}{1 - p(X)}\right) = \beta_0 + \beta_1X_1 + \dots \beta_pX_p$$
 called the "log odds" is linear.
 
