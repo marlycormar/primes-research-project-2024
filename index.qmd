@@ -123,7 +123,7 @@ To assess model performance, we will compare the accuracy, precision, recall, an
 
 - Recall: proportion of correctly classified positive observations among all actual positive observations or $\frac{TP}{TP + FN}$.
 
-- Specificity: proportion of correctly classified negative observations among all truth negative observations or $\frac{TN}{TN + FP}$.
+- Specificity: proportion of correctly classified negative observations among all actual negative observations or $\frac{TN}{TN + FP}$.
 
 ```{r}
 
@@ -239,7 +239,7 @@ The data is available at the UC Irvine Machine Learning Repository @ucidata. For
 <!----------------------------------------------------------------------------->
 # Ackcnowledgments
 
-We thank our PRIMES mentor, Marly Gotti, for her guidance throughout the reading and research periods. We are also grateful to the PRIMES organizers for making this program possible.
+We thank our PRIMES mentor, Dr. Marly Gotti, for her guidance throughout the reading and research periods. We are also grateful to the PRIMES organizers for making this program possible.
 
 <!----------------------------------------------------------------------------->
 <!--------------------------- ## CONFLICTS ------------------------------------>
