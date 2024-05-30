@@ -3,12 +3,6 @@
 
 # Ignore temp and cache files.
 _freeze/
-data/ann-metrics.csv
-data/knn-metrics.csv
-data/svm-metrics.csv
-data/gbm-metrics.csv
-data/lr-metrics.csv
-data/rf-metrics.csv
 index_cache/
 index_files/
 notebooks/ann_cache/
