@@ -6,6 +6,8 @@ The following abbreviations are used in this manuscript:
 - SVMs: Support Vector Machine(s)
 - ANNs: Artificial Neural Network(s)
 - NNs: Neural Network(s)
-- RNNs: Recurrent Neural Network(s)
+- RF: Random Forest(s)
+- LR: Logistic Regression
+- XGBoost: Extreme Gradient Boosting
 - DTC: Differentiated Thyroid Cancer
 - ML: Machine Learning
