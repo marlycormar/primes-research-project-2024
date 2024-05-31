@@ -2,15 +2,15 @@
 
 ### Model Description
 
-The Support Vector Machine (SVM) is an efficient approach for classification developed in the 1990s. The SVM generates a hyper-plane or curve that splits the hyper-space into a Yes region (cancer recurs) and a No region (cancer doesn't recur). Given a test observation, its classification is based on the region that it falls in.
+The Support Vector Machine (SVM) is a non-parametric and supervised algorithm for classification: the SVM generates a hyper-plane or curve that splits the sample space into two regions, and given a test observation, its classification is based on the region that it falls in.
 
-Now we explain how SVM works in detail. First, consider the special case in which there is a roughly linear decision boundary between the training observations in one category and those in the other category. In this case, the simpler support vector classifier can be used: generate a hyperplane $\beta_0+\beta_1 x_{i1}+\dots + \beta_p x_{ip}=0$ that mostly separates the two categories by solving the optimization problem of maximizing $M$, the width of the margin, subject to the conditions:
+In detail, the SVM maps the training data into a higher-dimensional space using kernels. Two common kernels are the polynomial kernel, which maps each observation via a polynomial of degree $d$, and the radial kernel, which maps each observation via its distance from a point. As a result, the training data now has a roughly linear decision boundary, so the simpler support vector classifier can be applied: generate a hyperplane $\beta_0+\beta_1 x_{i1}+\dots + \beta_p x_{ip}=0$ that mostly separates the two categories by solving the optimization problem of maximizing $M$, the width of the margin, subject to the conditions:
 
 1.  $\sum_{j=1}^p \beta_j^2 = 1$
 2.  $y_i(\beta_0+\beta_1 x_{i1}+\dots + \beta_p x_{ip}) \ge M(1-\epsilon_i)$
 3.  $\epsilon_i \ge 0$ and $\sum_{i=1}^n \epsilon_i \le C$.
 
-Here each $\epsilon_i$ is a small error term, and $C$ is tuning parameter for which larger $C$ corresponds to higher tolerance of violations of the margin. Finally, in the case of a non-linear decision boundary, SVM maps the training data into a higher-dimensional space using kernels. Two common kernels are the polynomial kernel, which maps each observation via a polynomial of degree $d$, and the radial kernel, which maps each observation via its distance from a point. Then the support vector classifier can be applied.
+Here each $\epsilon_i$ is a small error term, and $C$ is parameter for which larger $C$ corresponds to higher tolerance of violations of the margin. We tune these parameters below.
 
 ### Model Workflow
 
