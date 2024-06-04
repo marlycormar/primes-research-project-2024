@@ -4,6 +4,7 @@ project:
   - "*.qmd"
   - "!TODO.md"
   - "!README.md"
+  - "develop/"
 execute:
   freeze: auto
 
