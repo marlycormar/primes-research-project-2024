@@ -70,7 +70,7 @@ csl: bib-format/institute-of-mathematical-statistics.csl
 
 Let us split the cleaned data set into a training ($75\%$) set and a test ($25\%$) set using a random generator. The training data will be further separated into 10 folds for cross-validation.
 
-```{r data-split, echo=TRUE}
+```{r data-split, echo=TRUE, eval=FALSE}
 
 # Initialize a random number generator.
 set.seed(314)
@@ -84,8 +84,7 @@ test_data <- rsample::testing(data_split)
 data_cross_val <- rsample::vfold_cv(train_data)
 
 # Set aside the outcome column of the sample test data.
-test_outcome <- 
-  factor(test_data$Recurred)
+test_outcome <- factor(test_data$Recurred)
 
 ```
 
