@@ -18,46 +18,19 @@ The new function $f_i$ is now computed as $f_{i-1}(X) + \alpha\theta_i(X)$.
 
 ### Model Workflow
 
-```{r}
+```{r gbm-load-data}
 # Read cleaned data.
 cleaned_data <- readr::read_csv(here::here('data', 'cleaned-data.csv'))
-```
 
-
-```{r gbm-data-split, cache=TRUE}
-
-# Initialize a random number generator.
-set.seed(314)
-
-# Split data into training and test sets.
-data_split <- rsample::initial_split(cleaned_data)
-train_data <- rsample::training(data_split)
-test_data <- rsample::testing(data_split)
-
-# Split the training data into 10 folds for cross-validation.
-data_cross_val <- rsample::vfold_cv(train_data)
-
-# Set aside the outcome column of the sample test data.
-test_outcome <- 
-  factor(test_data$Recurred)
+# Load the data already computed in the index.qmd file.
+data_split <- readRDS(here::here('data/data_split.rds'))
+data_cross_val <- readRDS(here::here('data/data_cross_val.rds'))
+test_outcome <- readRDS(here::here('data/test_outcome.rds'))
+data_rec <- readRDS(here::here('data/data_rec.rds'))
 
 ```
 
-
-```{r gbm-data-recipes, cache=TRUE}
-library(tidymodels)
-
-# Create recipe for the data prep.
-data_rec <- recipes::recipe(Recurred ~ ., data = train_data) |>
-  recipes::step_corr(threshold = 0.6) |>
-  recipes::step_normalize(recipes::all_numeric()) |>
-  recipes::step_dummy(recipes::all_nominal_predictors())
-
-```
-
-
-
-```{r gbm-workflow, cache=TRUE}
+```{r gbm-workflow, cache=TRUE, echo=TRUE}
 
 # Create model specification.
 gbm_model_spec <- 
@@ -68,7 +41,7 @@ gbm_model_spec <-
     sample_size = tune(), mtry = tune(),
     learn_rate = tune()
   ) |>
-  set_engine('xgboost') %>%
+  set_engine('xgboost') |>
   set_mode('classification')
 
 # Create model workflow.

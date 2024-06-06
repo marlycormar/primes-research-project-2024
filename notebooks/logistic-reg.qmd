@@ -23,46 +23,19 @@ $$LLF = \sum_{i = 1}^n \left[y_i\log(p(x_i)) + (1 - y_i)\log(1 - p(x_i))\right].
 
 ### Model Workflow
 
-```{r}
+```{r lr-load-data}
 # Read cleaned data.
 cleaned_data <- readr::read_csv(here::here('data', 'cleaned-data.csv'))
-```
 
-
-```{r lr-data-split, cache=TRUE}
-
-# Initialize a random number generator.
-set.seed(314)
-
-# Split data into training and test sets.
-data_split <- rsample::initial_split(cleaned_data)
-train_data <- rsample::training(data_split)
-test_data <- rsample::testing(data_split)
-
-# Split the training data into 10 folds for cross-validation.
-data_cross_val <- rsample::vfold_cv(train_data)
-
-# Set aside the outcome column of the sample test data.
-test_outcome <- 
-  factor(test_data$Recurred)
+# Load the data already computed in the index.qmd file.
+data_split <- readRDS(here::here('data/data_split.rds'))
+data_cross_val <- readRDS(here::here('data/data_cross_val.rds'))
+test_outcome <- readRDS(here::here('data/test_outcome.rds'))
+data_rec <- readRDS(here::here('data/data_rec.rds'))
 
 ```
 
-
-```{r lr-data-recipes, cache=TRUE}
-library(tidymodels)
-
-# Create recipe for the data prep.
-data_rec <- recipes::recipe(Recurred ~ ., data = train_data) |>
-  recipes::step_corr(threshold = 0.6) |>
-  recipes::step_normalize(recipes::all_numeric()) |>
-  recipes::step_dummy(recipes::all_nominal_predictors())
-
-```
-
-
-
-```{r lr-workflow, cache=TRUE}
+```{r lr-workflow, cache=TRUE, echo=TRUE}
 
 # Create model specification.
 # Setting mixture = 1 means that the glmnet model will potentially remove irrelevant predictors and choose a simpler model.

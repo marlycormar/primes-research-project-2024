@@ -14,41 +14,16 @@ Here each $\epsilon_i$ is a small error term, and $C$ is parameter for which lar
 
 ### Model Workflow
 
-```{r, warning=FALSE, message=FALSE}
+```{r svm-load-data}
 
 # Read cleaned data.
 cleaned_data <- readr::read_csv(here::here('data', 'cleaned-data.csv'))
 
-```
-
-
-```{r svm-data-split, cache=TRUE}
-
-set.seed(314)
-
-# Split data into training, validation, and test sets.
-data_split <- rsample::initial_validation_split(cleaned_data)
-train_data <- rsample::training(data_split)
-validation_data <- rsample::validation(data_split)
-test_data <- rsample::testing(data_split)
-
-# Create cross-validation collection.
-data_cross_val <- rsample::vfold_cv(train_data)
-
-# Save the test data `Recurred`.
-test_outcome <- 
-  factor(test_data$Recurred)
-
-```
-
-
-```{r svm-data-recipes, cache=TRUE}
-
-# Create recipe for the data prep.
-data_rec <- recipes::recipe(Recurred ~ ., data = train_data) |>
-  recipes::step_corr(threshold = 0.6) |>
-  recipes::step_normalize(recipes::all_numeric()) |>
-  recipes::step_dummy(recipes::all_nominal_predictors())
+# Load the data already computed in the index.qmd file.
+data_split <- readRDS(here::here('data/data_split.rds'))
+data_cross_val <- readRDS(here::here('data/data_cross_val.rds'))
+test_outcome <- readRDS(here::here('data/test_outcome.rds'))
+data_rec <- readRDS(here::here('data/data_rec.rds'))
 
 ```
 
