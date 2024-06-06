@@ -30,7 +30,6 @@ number-sections: true
 #' https://github.com/citation-style-language/styles
 #' You can also search by example:
 #' https://editor.citationstyles.org/searchByExample/
-# csl: bib-format/diabetologia.csl
 # csl: bib-format/elsevier-harvard.csl
 csl: bib-format/institute-of-mathematical-statistics.csl
 ---
