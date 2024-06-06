@@ -106,85 +106,85 @@ male_rec_no_perc <- round(male_rec_no/(male_rec_yes + male_rec_no)*100, 1)
 
 Out of the `r ncol(cleaned_data)` variables, `r ncol(cleaned_data) - 1` will be used as features, leaving `Recurrence` as the target variable to be predicted. Among the patients, there is a significant disparity between males and females: `r glue::glue('{fem_no}({fem_perc}%)')` are females and `r glue::glue('{males_no}({males_perc}%)')` are males. Males are about evenly distributed in terms of cancer recurrence with `r glue::glue('{male_rec_yes_perc}%')` recurred cases out of all males, whereas females had `r glue::glue('{fem_rec_yes_perc}%')` recurred cases out of all females (see @fig-gender-dist).
 
-<!-- ```{r fig-gender-dist} -->
+```{r fig-gender-dist}
+#| label: fig-gender-dist
+#| fig-cap: "Gender Distribution by Recurrence."
+#| fig-alt: "Gender Distribution by Recurrence."
+
+# Gender Distribution grouped by cancer recurrence.
+cleaned_data |>
+  dplyr::mutate(fem_total = sum(Gender == 'Female'),
+                male_total= sum(Gender == 'Male')) |>
+  dplyr::group_by(Gender, Recurred) %>%
+  dplyr::reframe(count = dplyr::n(), fem_total, male_total) |>
+  dplyr::mutate(
+    count = ifelse(Gender == 'Female',
+                   round(count/fem_total*100, 1),
+                   round(count/male_total*100, 1))) |>
+  dplyr::distinct() |>
+  plotly::plot_ly(
+    x = ~Gender,
+    y = ~count,
+    color = ~Recurred,
+    text = ~Recurred,
+    opacity = 0.7,
+    type = 'bar',
+    hovertemplate = '<b>Gender</b>: %{x} <br><b>Reccurred</b>: %{text} <br><b>Percentage</b>: %{y} <extra></extra>'
+    ) |>
+  plotly::config(displayModeBar = FALSE) |>
+  plotly::layout(bargap = 0.5, barmode = 'stack',
+                 yaxis = list(title = '', ticksuffix = '%'),
+                 legend = list(title = list(text = '<b>Recurred</b>'))
+  )
+
+```
+
+
+<!-- ```{r} -->
 <!-- #| label: fig-gender-dist -->
-<!-- #| fig-cap: "Gender Distribution by Recurrence." -->
+<!-- #| fig-cap: 'Gender Distribution by Recurrence.' -->
 <!-- #| fig-alt: "Gender Distribution by Recurrence." -->
 
-<!-- # Gender Distribution grouped by cancer recurrence. -->
-<!-- cleaned_data |> -->
-<!--   dplyr::mutate(fem_total = sum(Gender == 'Female'), -->
-<!--                 male_total= sum(Gender == 'Male')) |> -->
-<!--   dplyr::group_by(Gender, Recurred) %>% -->
-<!--   dplyr::reframe(count = dplyr::n(), fem_total, male_total) |> -->
-<!--   dplyr::mutate( -->
-<!--     count = ifelse(Gender == 'Female', -->
-<!--                    round(count/fem_total*100, 1), -->
-<!--                    round(count/male_total*100, 1))) |> -->
-<!--   dplyr::distinct() |> -->
-<!--   plotly::plot_ly( -->
-<!--     x = ~Gender, -->
-<!--     y = ~count, -->
-<!--     color = ~Recurred, -->
-<!--     text = ~Recurred, -->
-<!--     opacity = 0.7, -->
-<!--     type = 'bar', -->
-<!--     hovertemplate = '<b>Gender</b>: %{x} <br><b>Reccurred</b>: %{text} <br><b>Percentage</b>: %{y} <extra></extra>' -->
-<!--     ) |> -->
-<!--   plotly::config(displayModeBar = FALSE) |> -->
-<!--   plotly::layout(bargap = 0.5, barmode = 'stack', -->
-<!--                  yaxis = list(title = '', ticksuffix = '%'), -->
-<!--                  legend = list(title = list(text = '<b>Recurred</b>')) -->
-<!--   ) -->
-
+<!-- knitr::include_graphics(here::here('images/Gender-plot.png')) -->
 <!-- ``` -->
 
 
-```{r}
-#| label: fig-gender-dist
-#| fig-cap: 'Gender Distribution by Recurrence.'
-#| fig-alt: "Gender Distribution by Recurrence."
-
-knitr::include_graphics(here::here('images/Gender-plot.png'))
-```
-
-
 The distribution of `Age` by cancer recurrence is shown in @fig-age-dist. Note that, in general, older patients are more likely to recur.
-
-```{r fig-age-dist}
-#| label: fig-age-dist
-#| fig-cap: "Age Distribution by Recurrence"
-#| fig-alt: "Age Distribution by Recurrence"
-
-knitr::include_graphics(here::here('images/Age-plot.png'))
-```
-
 
 <!-- ```{r fig-age-dist} -->
 <!-- #| label: fig-age-dist -->
 <!-- #| fig-cap: "Age Distribution by Recurrence" -->
 <!-- #| fig-alt: "Age Distribution by Recurrence" -->
 
-<!-- #' Age Distribution grouped by recurrence. -->
-<!-- #' TODO: include percentages between parenthesis. -->
-<!-- cleaned_data |> -->
-<!--   plotly::plot_ly() |> -->
-<!--   plotly::add_trace( -->
-<!--     x = ~Age, -->
-<!--     color = ~Recurred, -->
-<!--     text = ~Recurred, -->
-<!--     opacity = 0.7, #marker = list(color = '02d46a'), -->
-<!--     type = 'histogram', -->
-<!--     histnorm = 'percent', -->
-<!--     hovertemplate = '<b>Age Range</b>: %{x} years <br><b>Percentage</b>: %{y:.1f}%<br><b>Reccurred</b>: %{text} <extra></extra>' -->
-<!--     ) |> -->
-<!--   plotly::config(displayModeBar = FALSE) |> -->
-<!--   plotly::layout(bargap = 0.1, barmode = 'stack', -->
-<!--                  yaxis = list(ticksuffix = '%'), -->
-<!--                  legend = list(title = list(text = '<b>Recurred</b>')) -->
-<!--   ) -->
-
+<!-- knitr::include_graphics(here::here('images/Age-plot.png')) -->
 <!-- ``` -->
+
+
+```{r fig-age-dist}
+#| label: fig-age-dist
+#| fig-cap: "Age Distribution by Recurrence"
+#| fig-alt: "Age Distribution by Recurrence"
+
+#' Age Distribution grouped by recurrence.
+#' TODO: include percentages between parenthesis.
+cleaned_data |>
+  plotly::plot_ly() |>
+  plotly::add_trace(
+    x = ~Age,
+    color = ~Recurred,
+    text = ~Recurred,
+    opacity = 0.7, #marker = list(color = '02d46a'),
+    type = 'histogram',
+    histnorm = 'percent',
+    hovertemplate = '<b>Age Range</b>: %{x} years <br><b>Percentage</b>: %{y:.1f}%<br><b>Reccurred</b>: %{text} <extra></extra>'
+    ) |>
+  plotly::config(displayModeBar = FALSE) |>
+  plotly::layout(bargap = 0.1, barmode = 'stack',
+                 yaxis = list(ticksuffix = '%'),
+                 legend = list(title = list(text = '<b>Recurred</b>'))
+  )
+
+```
 
 
 ```{r prep-summary-dt, cache=TRUE}
@@ -207,47 +207,48 @@ dt_summary <- tibble::as_tibble(dt_summary) |>
 Besides `Age`, the rest of the features are categorical. One interesting categorical feature is `Adenopathy`. It represents the presence of swollen lymph nodes during physical examination: no adenopathy, anterior right, anterior left, bilateral (i.e., both sides of the body), posterior, and extensive (i.e., involves all the locations). Note the high correlation between swollen lymph nodes and DTC recurrence rate (see @fig-aden-dist).
 
 
-```{r fig-aden-dist, cached=TRUE}
-
-#| label: fig-aden-dist
-#| fig-cap: "Adenopathy Distribution by cancer recurrence."
-#| fig-alt: "Adenopathy Distribution by cancer recurrence."
-
-knitr::include_graphics(here::here('images/Ade-plot.png'))
-
-```
-
-
 <!-- ```{r fig-aden-dist, cached=TRUE} -->
 
 <!-- #| label: fig-aden-dist -->
 <!-- #| fig-cap: "Adenopathy Distribution by cancer recurrence." -->
 <!-- #| fig-alt: "Adenopathy Distribution by cancer recurrence." -->
 
-<!-- # Adenopathy Distribution by cancer recurrence. -->
-<!-- cleaned_data |> -->
-<!--   dplyr::group_by(Adenopathy) |> -->
-<!--   dplyr::reframe(total = dplyr::n(), Recurred) |> -->
-<!--   dplyr::group_by(Adenopathy, Recurred) |> -->
-<!--   dplyr::reframe(total_rec = round(dplyr::n()/total*100, 1), total) |> -->
-<!--   dplyr::distinct() |> -->
-<!--   plotly::plot_ly( -->
-<!--     x = ~Adenopathy, -->
-<!--     y = ~total_rec, -->
-<!--     color = ~Recurred, -->
-<!--     text = ~Recurred, -->
-<!--     opacity = 0.7, -->
-<!--     type = 'bar', -->
-<!--     hovertext = ~total, -->
-<!--     hovertemplate = '<b>Adenopathy</b>: %{x} <br><b>Reccurred</b>: %{text} <br><b>Percentage</b>: %{y} of %{hovertext} patients <extra></extra>' -->
-<!--     ) |> -->
-<!--   plotly::config(displayModeBar = FALSE) |> -->
-<!--   plotly::layout(bargap = 0.1, barmode = 'stack', -->
-<!--                  yaxis = list(title = '', ticksuffix = '%'), -->
-<!--                  legend = list(title = list(text = '<b>Recurred</b>')) -->
-<!--   ) -->
+<!-- knitr::include_graphics(here::here('images/Ade-plot.png')) -->
 
 <!-- ``` -->
+
+
+
+```{r fig-aden-dist, cached=TRUE}
+
+#| label: fig-aden-dist
+#| fig-cap: "Adenopathy Distribution by cancer recurrence."
+#| fig-alt: "Adenopathy Distribution by cancer recurrence."
+
+# Adenopathy Distribution by cancer recurrence.
+cleaned_data |>
+  dplyr::group_by(Adenopathy) |>
+  dplyr::reframe(total = dplyr::n(), Recurred) |>
+  dplyr::group_by(Adenopathy, Recurred) |>
+  dplyr::reframe(total_rec = round(dplyr::n()/total*100, 1), total) |>
+  dplyr::distinct() |>
+  plotly::plot_ly(
+    x = ~Adenopathy,
+    y = ~total_rec,
+    color = ~Recurred,
+    text = ~Recurred,
+    opacity = 0.7,
+    type = 'bar',
+    hovertext = ~total,
+    hovertemplate = '<b>Adenopathy</b>: %{x} <br><b>Reccurred</b>: %{text} <br><b>Percentage</b>: %{y} of %{hovertext} patients <extra></extra>'
+    ) |>
+  plotly::config(displayModeBar = FALSE) |>
+  plotly::layout(bargap = 0.1, barmode = 'stack',
+                 yaxis = list(title = '', ticksuffix = '%'),
+                 legend = list(title = list(text = '<b>Recurred</b>'))
+  )
+
+```
 
 
 A summary of all the features and their categories are shown in @tbl-summary.
