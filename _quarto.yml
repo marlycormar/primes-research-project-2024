@@ -6,7 +6,7 @@ project:
   - "!README.md"
   - "develop/"
 execute:
-  freeze: auto
+  freeze: auto # Re-render only when source changes
 
 format:
   html:
