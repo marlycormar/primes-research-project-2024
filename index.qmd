@@ -92,7 +92,7 @@ The `recipes` package is useful to create a blueprint of the pre-processing step
 - the numeric features should be normalized, and
 - the categorical variables should be transformed into numerical variables.
 
-```{r data-recipes, echo=TRUE, eval=FALSE}
+```{r data-recipes, echo=TRUE}
 
 # Create recipe for the data prep.
 data_rec <- recipes::recipe(Recurred ~ ., data = train_data) |>
@@ -102,6 +102,18 @@ data_rec <- recipes::recipe(Recurred ~ ., data = train_data) |>
 
 ```
 
+
+```{r save-data}
+
+#' Save split data and the recipes to be used by the notebooks scripts.
+#' This is important to avoid differences in the scripts.
+#' Note that this is not shown in the paper.
+saveRDS(data_split, 'data/data_split.rds')
+saveRDS(data_cross_val, 'data/data_cross_val.rds')
+saveRDS(test_outcome, 'data/test_outcome.rds')
+saveRDS(data_rec, 'data/data_rec.rds')
+
+```
 
 {{< include notebooks/knn.qmd >}}
 {{< include notebooks/svm.qmd >}}
