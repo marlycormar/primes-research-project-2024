@@ -35,7 +35,7 @@ csl: bib-format/institute-of-mathematical-statistics.csl
 ---
 
 
-```{r set_params, echo=FALSE, cache=TRUE}
+```{r set_params, cache=TRUE}
 
 `%>%` <- magrittr::`%>%`
 
@@ -69,17 +69,16 @@ csl: bib-format/institute-of-mathematical-statistics.csl
 
 Let us split the cleaned data set into a training ($75\%$) set and a test ($25\%$) set using a random generator. The training data will be further separated into 10 folds for cross-validation.
 
-```{r data-split, echo=TRUE, eval=FALSE}
-
-# Initialize a random number generator.
-set.seed(314)
+```{r data-split, echo=TRUE}
 
 # Split data into training and test sets.
+set.seed(314)
 data_split <- rsample::initial_split(cleaned_data)
 train_data <- rsample::training(data_split)
 test_data <- rsample::testing(data_split)
 
 # Split the training data into 10 folds for cross-validation.
+set.seed(3145)
 data_cross_val <- rsample::vfold_cv(train_data)
 
 # Set aside the outcome column of the sample test data.
