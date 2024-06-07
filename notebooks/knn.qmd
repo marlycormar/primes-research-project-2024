@@ -24,7 +24,7 @@ data_rec <- readRDS(here::here('data/data_rec.rds'))
 
 Now let us create a KNN model specification and workflow indicating the model hyper-parameters: a number of neighbors, a weight function, and a distance function. To optimize our model, we will use the `tune::tune()` function to find optimal values of these parameters in terms of model accuracy. 
 
-```{r knn-workflow, cache=TRUE}
+```{r knn-workflow, cache=TRUE, echo=TRUE}
 
 # Create model specification.
 knn_model_spec <-
