@@ -4,7 +4,9 @@
 Our study focuses on the "Differentiated Thyroid Cancer Recurrence" dataset @borzooei2023 hosted by the UCI Machine Learning Repository. The UCI Machine Learning Repository offers a wide array of datasets used for empirical analysis in machine learning and data mining @ucidata. Established by the University of California, Irvine, this repository facilitates academic and educational pursuits by providing free access to datasets that cover various domains. As of March, 2024, it hosts and maintains over 600 datasets.
 
 ```{r read-raw-data, echo=FALSE, cache=TRUE}
+
 raw_data <- readr::read_csv(here::here('data/raw-data.csv'))
+
 ```
 
 The "Differentiated Thyroid Cancer Recurrence" dataset encompasses `r nrow(raw_data)` samples or observations, and a range of `r ncol(raw_data)` variables pertinent to thyroid cancer, including patient demographics, clinical features, and pathological details, all aimed at elucidating patterns associated with cancer recurrence.
@@ -61,7 +63,6 @@ cleaned_data <-
 
 ```
 
-
 ```{r write-cleaned-data, echo=FALSE, cache=TRUE, include=FALSE}
 
 # Save cleaned data.
@@ -85,10 +86,10 @@ fem_rec_yes <- sum(cleaned_data$Gender == 'Female' & cleaned_data$Recurred == 'Y
 fem_rec_no <- sum(cleaned_data$Gender == 'Female' & cleaned_data$Recurred == 'No')
 male_rec_yes <- sum(cleaned_data$Gender == 'Male' & cleaned_data$Recurred == 'Yes')
 male_rec_no <- sum(cleaned_data$Gender == 'Male' & cleaned_data$Recurred == 'No')
-fem_rec_yes_perc <- round(fem_rec_yes/(fem_rec_yes + fem_rec_no)*100, 1)
-fem_rec_no_perc <- round(fem_rec_no/(fem_rec_yes + fem_rec_no)*100, 1)
-male_rec_yes_perc <- round(male_rec_yes/(male_rec_yes + male_rec_no)*100, 1)
-male_rec_no_perc <- round(male_rec_no/(male_rec_yes + male_rec_no)*100, 1)
+fem_rec_yes_perc <- round(fem_rec_yes/fem_no*100, 1)
+fem_rec_no_perc <- round(fem_rec_no/fem_no*100, 1)
+male_rec_yes_perc <- round(male_rec_yes/males_no*100, 1)
+male_rec_no_perc <- round(male_rec_no/males_no*100, 1)
 
 ```
 
@@ -135,7 +136,6 @@ cleaned_data |>
 
 <!-- knitr::include_graphics(here::here('images/Gender-plot.png')) -->
 <!-- ``` -->
-
 
 The distribution of `Age` by cancer recurrence is shown in @fig-age-dist. Note that, in general, older patients are more likely to recur.
 
