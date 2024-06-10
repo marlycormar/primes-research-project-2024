@@ -3,15 +3,6 @@
 
 Our study focuses on the "Differentiated Thyroid Cancer Recurrence" dataset @borzooei2023 hosted by the UCI Machine Learning Repository. The UCI Machine Learning Repository offers a wide array of datasets used for empirical analysis in machine learning and data mining @ucidata. Established by the University of California, Irvine, this repository facilitates academic and educational pursuits by providing free access to datasets that cover various domains. As of March, 2024, it hosts and maintains over 600 datasets.
 
-```{r eda_set_params, echo=FALSE, cache=TRUE}
-
-image_width <- 400
-image_height <- 300
-`%>%` <- magrittr::`%>%`
-
-```
-
-
 ```{r read-raw-data, echo=FALSE, cache=TRUE}
 
 raw_data <- readr::read_csv(here::here('data/raw-data.csv'))
