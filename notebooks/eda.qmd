@@ -103,7 +103,7 @@ After removing duplicate observations, our data has `r nrow(cleaned_data)` obser
 cleaned_data |>
   dplyr::mutate(fem_total = sum(Gender == 'Female'),
                 male_total= sum(Gender == 'Male')) |>
-  dplyr::group_by(Gender, Recurred) %>%
+  dplyr::group_by(Gender, Recurred) |>
   dplyr::reframe(count = dplyr::n(), fem_total, male_total) |>
   dplyr::mutate(
     count = ifelse(Gender == 'Female',
