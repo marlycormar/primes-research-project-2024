@@ -93,7 +93,7 @@ male_rec_no_perc <- round(male_rec_no/males_no*100, 1)
 
 ```
 
-After removing duplicate observations, our data has `r nrow(cleaned_data)` observations. Out of the `r ncol(cleaned_data)` variables, `r ncol(cleaned_data) - 1` will be used as features, leaving `Recurred` as the target variable to be predicted. Among the patients, there is a significant disparity between males and females: `r glue::glue('{fem_no}({fem_perc}%)')` are females and `r glue::glue('{males_no}({males_perc}%)')` are males. Males are about evenly distributed in terms of cancer recurrence with `r glue::glue('{male_rec_yes_perc}%')` recurred cases out of all males, whereas females had `r glue::glue('{fem_rec_yes_perc}%')` recurred cases out of all females (see @fig-gender-dist).
+After removing duplicate observations, our data has `r nrow(cleaned_data)` observations. Out of the `r ncol(cleaned_data)` variables, `r ncol(cleaned_data) - 1` will be used as features, leaving `Recurred` as the target variable to be predicted. Among the patients, there is a significant disparity between males and females: `r glue::glue('{fem_no}({fem_perc}%)')` are females and `r glue::glue('{males_no}({males_perc}%)')` are males. Males are about evenly distributed in terms of cancer recurrence with `r glue::glue('{male_rec_yes_perc}%')` total recurred cases. On the other hand, females are not evenly distributed in terms of cancer recurrence with `r glue::glue('{fem_rec_yes_perc}%')` total recurred cases (see @fig-gender-dist).
 
 ```{r fig-gender-dist}
 #| label: fig-gender-dist
