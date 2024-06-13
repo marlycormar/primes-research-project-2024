@@ -118,7 +118,7 @@ cleaned_data |>
     text = ~Recurred,
     opacity = 0.7,
     type = 'bar',
-    hovertemplate = '<b>Gender</b>: %{x} <br><b>Reccurred</b>: %{text} <br><b>Percentage</b>: %{y} <extra></extra>'
+    hovertemplate = '<b>Gender</b>: %{x} <br><b>Recurred</b>: %{text} <br><b>Percentage</b>: %{y} <extra></extra>'
     ) |>
   plotly::config(displayModeBar = FALSE) |>
   plotly::layout(bargap = 0.5, barmode = 'stack',
@@ -127,7 +127,6 @@ cleaned_data |>
   )
 
 ```
-
 
 <!-- ```{r} -->
 <!-- #| label: fig-gender-dist -->
@@ -147,14 +146,12 @@ The distribution of `Age` by cancer recurrence is shown in @fig-age-dist. Note t
 <!-- knitr::include_graphics(here::here('images/Age-plot.png')) -->
 <!-- ``` -->
 
-
 ```{r fig-age-dist}
 #| label: fig-age-dist
 #| fig-cap: "Age Distribution by Recurrence"
 #| fig-alt: "Age Distribution by Recurrence"
 
 #' Age Distribution grouped by recurrence.
-#' TODO: include percentages between parenthesis.
 cleaned_data |>
   plotly::plot_ly() |>
   plotly::add_trace(
@@ -164,7 +161,7 @@ cleaned_data |>
     opacity = 0.7, #marker = list(color = '02d46a'),
     type = 'histogram',
     histnorm = 'percent',
-    hovertemplate = '<b>Age Range</b>: %{x} years <br><b>Percentage</b>: %{y:.1f}%<br><b>Reccurred</b>: %{text} <extra></extra>'
+    hovertemplate = '<b>Age Range</b>: %{x} years <br><b>Percentage</b>: %{y:.1f}%<br><b>Recurred</b>: %{text}<extra></extra>'
     ) |>
   plotly::config(displayModeBar = FALSE) |>
   plotly::layout(bargap = 0.1, barmode = 'stack',
@@ -205,8 +202,6 @@ Besides `Age`, the rest of the features are categorical. One interesting categor
 
 <!-- ``` -->
 
-
-
 ```{r fig-aden-dist, cached=TRUE}
 
 #| label: fig-aden-dist
@@ -228,7 +223,7 @@ cleaned_data |>
     opacity = 0.7,
     type = 'bar',
     hovertext = ~total,
-    hovertemplate = '<b>Adenopathy</b>: %{x} <br><b>Reccurred</b>: %{text} <br><b>Percentage</b>: %{y} of %{hovertext} patients <extra></extra>'
+    hovertemplate = '<b>Adenopathy</b>: %{x} <br><b>Recurred</b>: %{text} <br><b>Percentage</b>: %{y} of %{hovertext} patients <extra></extra>'
     ) |>
   plotly::config(displayModeBar = FALSE) |>
   plotly::layout(bargap = 0.1, barmode = 'stack',
@@ -291,7 +286,7 @@ reactable::reactable(
 <!--     text = ~Recurred, -->
 <!--     opacity = 0.7, -->
 <!--     type = 'bar', -->
-<!--     hovertemplate = '<b>Pathology</b>: %{x} <br><b>Reccurred</b>: %{text} <br><b>Percentage</b>: %{y} <extra></extra>' -->
+<!--     hovertemplate = '<b>Pathology</b>: %{x} <br><b>Recurred</b>: %{text} <br><b>Percentage</b>: %{y} <extra></extra>' -->
 <!--     ) |> -->
 <!--   plotly::config(displayModeBar = FALSE) |> -->
 <!--   plotly::layout(bargap = 0.1, barmode = 'stack', -->
