@@ -208,11 +208,20 @@ Besides `Age`, the rest of the features are categorical. One interesting categor
 
 # Adenopathy distribution by cancer recurrence.
 cleaned_data |>
-  dplyr::group_by(Adenopathy, Recurred) |>
+  #' Find first the total number of patients by Adenopathy.
+  #' This will be used to find the percentage of repeating cases next.
   dplyr::reframe(
-    total = dplyr::n(),
-    total_rec = round(dplyr::n()/total*100, 1), total
+    total_aden = dplyr::n(),
+    .by = Adenopathy,
+    Recurred # Keep this column.
   ) |>
+  # Calculate the number of cancer recurrences per adepathy. Calculate %.
+  dplyr::reframe(
+    total_rec = round(dplyr::n()/total_aden*100, 1),
+    .by = c(Adenopathy, Recurred),
+    total_aden = total_aden
+  ) |>
+  dplyr::distinct() |>
   plotly::plot_ly(
     x = ~Adenopathy,
     y = ~total_rec,
@@ -220,7 +229,7 @@ cleaned_data |>
     text = ~Recurred,
     opacity = 0.7,
     type = 'bar',
-    hovertext = ~total,
+    hovertext = ~total_aden,
     hovertemplate = '<b>Adenopathy</b>: %{x} <br><b>Recurred</b>: %{text} <br><b>Percentage</b>: %{y} of %{hovertext} patients <extra></extra>'
     ) |>
   plotly::config(displayModeBar = FALSE) |>
