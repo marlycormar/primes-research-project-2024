@@ -34,13 +34,6 @@ number-sections: true
 csl: bib-format/institute-of-mathematical-statistics.csl
 ---
 
-
-```{r set_params, cache=TRUE}
-
-`%>%` <- magrittr::`%>%`
-
-```
-
 <!----------------------------------------------------------------------------->
 <!---------------------------- ## INTRODUCTION -------------------------------->
 <!----------------------------------------------------------------------------->
@@ -150,8 +143,8 @@ models_performance <-
       dplyr::mutate('Model' = 'XGBoost', .before = 1),
     readr::read_csv('data/rf-metrics.csv') |>
       dplyr::mutate('Model' = 'Random Forest', .before = 1)
-  ) %>%
-  dplyr::group_by(Metric) %>%
+  ) |>
+  dplyr::group_by(Metric) |>
   dplyr::filter(Value == max(Value))
 
 acc_best <- models_performance |> dplyr::filter(Metric == 'Accuracy')
