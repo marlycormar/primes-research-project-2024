@@ -209,11 +209,11 @@ Besides `Age`, the rest of the features are categorical. One interesting categor
 
 # Adenopathy Distribution by cancer recurrence.
 cleaned_data |>
-  dplyr::group_by(Adenopathy) |>
-  dplyr::reframe(total = dplyr::n(), Recurred) |>
   dplyr::group_by(Adenopathy, Recurred) |>
-  dplyr::reframe(total_rec = round(dplyr::n()/total*100, 1), total) |>
-  dplyr::distinct() |>
+  dplyr::reframe(
+    total = dplyr::n(),
+    total_rec = round(dplyr::n()/total*100, 1), total
+  ) |>
   plotly::plot_ly(
     x = ~Adenopathy,
     y = ~total_rec,
