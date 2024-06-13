@@ -201,8 +201,7 @@ Besides `Age`, the rest of the features are categorical. One interesting categor
 
 <!-- ``` -->
 
-```{r fig-aden-dist, cached=TRUE}
-
+```{r fig-aden-dist}
 #| label: fig-aden-dist
 #| fig-cap: "Adenopathy Distribution by Cancer Recurrence."
 #| fig-alt: "Adenopathy Distribution by Cancer Recurrence."
