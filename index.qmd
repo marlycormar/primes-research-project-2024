@@ -99,7 +99,8 @@ data_rec <- recipes::recipe(Recurred ~ ., data = train_data) |>
 ```{r save-data}
 
 #' Save split data and the recipes to be used by the notebooks scripts.
-#' This is important to avoid differences in the scripts.
+#' This is important to avoid differences in the scripts and remove duplicate
+#' computations.
 #' Note that this is not shown in the paper.
 saveRDS(data_split, 'data/data_split.rds')
 saveRDS(data_cross_val, 'data/data_cross_val.rds')
