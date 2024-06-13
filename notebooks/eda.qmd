@@ -97,8 +97,8 @@ After removing duplicates, our data has `r nrow(cleaned_data)` observations. Out
 
 ```{r fig-gender-dist}
 #| label: fig-gender-dist
-#| fig-cap: "Gender Distribution by Cancer Recurrence."
-#| fig-alt: "Gender Distribution by Cancer Recurrence."
+#| fig-cap: "Gender Distribution by Cancer Recurrence"
+#| fig-alt: "Gender Distribution by Cancer Recurrence"
 
 # Gender Distribution grouped by cancer recurrence.
 cleaned_data |>
@@ -203,8 +203,8 @@ Besides `Age`, the rest of the features are categorical. One interesting categor
 
 ```{r fig-aden-dist}
 #| label: fig-aden-dist
-#| fig-cap: "Adenopathy Distribution by Cancer Recurrence."
-#| fig-alt: "Adenopathy Distribution by Cancer Recurrence."
+#| fig-cap: "Adenopathy Distribution by Cancer Recurrence"
+#| fig-alt: "Adenopathy Distribution by Cancer Recurrence"
 
 # Adenopathy distribution by cancer recurrence.
 cleaned_data |>
@@ -245,8 +245,8 @@ A summary of all the features and their categories are shown in @tbl-summary.
 
 ```{r tbl-summ}
 #| label: tbl-summary
-#| tbl-cap: "Feature names and their distinct values."
-#| tbl-alt: "Feature names and their distinct values."
+#| tbl-cap: "Feature Names and their Distinct Values"
+#| tbl-alt: "Feature Names and their Distinct Values"
 
 # Prepare table's theme.
 theme <- reactable::reactableTheme(
@@ -270,7 +270,6 @@ reactable::reactable(
 )
 
 ```
-
 
 
 <!-- ```{r fig-path-dist, cached=TRUE} -->
