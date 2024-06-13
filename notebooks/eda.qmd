@@ -97,8 +97,8 @@ After removing duplicates, our data has `r nrow(cleaned_data)` observations. Out
 
 ```{r fig-gender-dist}
 #| label: fig-gender-dist
-#| fig-cap: "Gender Distribution by Recurrence."
-#| fig-alt: "Gender Distribution by Recurrence."
+#| fig-cap: "Gender Distribution by Cancer Recurrence."
+#| fig-alt: "Gender Distribution by Cancer Recurrence."
 
 # Gender Distribution grouped by cancer recurrence.
 cleaned_data |>
@@ -130,8 +130,8 @@ cleaned_data |>
 
 <!-- ```{r} -->
 <!-- #| label: fig-gender-dist -->
-<!-- #| fig-cap: 'Gender Distribution by Recurrence.' -->
-<!-- #| fig-alt: "Gender Distribution by Recurrence." -->
+<!-- #| fig-cap: 'Gender Distribution by Cancer Recurrence.' -->
+<!-- #| fig-alt: "Gender Distribution by Cancer Recurrence." -->
 
 <!-- knitr::include_graphics(here::here('images/Gender-plot.png')) -->
 <!-- ``` -->
@@ -140,18 +140,18 @@ The distribution of `Age` by cancer recurrence is shown in @fig-age-dist. Note t
 
 <!-- ```{r fig-age-dist} -->
 <!-- #| label: fig-age-dist -->
-<!-- #| fig-cap: "Age Distribution by Recurrence" -->
-<!-- #| fig-alt: "Age Distribution by Recurrence" -->
+<!-- #| fig-cap: "Age Distribution by Cancer Recurrence" -->
+<!-- #| fig-alt: "Age Distribution by Cancer Recurrence" -->
 
 <!-- knitr::include_graphics(here::here('images/Age-plot.png')) -->
 <!-- ``` -->
 
 ```{r fig-age-dist}
 #| label: fig-age-dist
-#| fig-cap: "Age Distribution by Recurrence"
-#| fig-alt: "Age Distribution by Recurrence"
+#| fig-cap: "Age Distribution by Cancer Recurrence"
+#| fig-alt: "Age Distribution by Cancer Recurrence"
 
-#' Age Distribution grouped by recurrence.
+#' Age Distribution grouped by cancer recurrence.
 cleaned_data |>
   plotly::plot_ly() |>
   plotly::add_trace(
@@ -204,10 +204,10 @@ Besides `Age`, the rest of the features are categorical. One interesting categor
 ```{r fig-aden-dist, cached=TRUE}
 
 #| label: fig-aden-dist
-#| fig-cap: "Adenopathy Distribution by cancer recurrence."
-#| fig-alt: "Adenopathy Distribution by cancer recurrence."
+#| fig-cap: "Adenopathy Distribution by Cancer Recurrence."
+#| fig-alt: "Adenopathy Distribution by Cancer Recurrence."
 
-# Adenopathy Distribution by cancer recurrence.
+# Adenopathy distribution by cancer recurrence.
 cleaned_data |>
   dplyr::group_by(Adenopathy, Recurred) |>
   dplyr::reframe(
