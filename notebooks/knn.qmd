@@ -30,8 +30,8 @@ Now let us create a KNN model specification and workflow indicating the model hy
 knn_model_spec <-
   parsnip::nearest_neighbor(
     neighbors = tune::tune(),
-    weight_func = tune::tune(),
-    dist_power = tune::tune()
+    dist_power = tune::tune(),
+    weight_func = tune::tune()
   ) |>
   parsnip::set_mode('classification') |>
   parsnip::set_engine('kknn')
