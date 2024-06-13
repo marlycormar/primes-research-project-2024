@@ -57,31 +57,28 @@ cores_no <- parallel::detectCores() - 1
 #' Start timer.
 tictoc::tic()
 
-# Create cores_no clusters.
+# Create and register clusters.
 clusters <- parallel::makeCluster(cores_no)
-
-# Start clusters.
 doParallel::registerDoParallel(clusters)
 
 # Fine-tune the model params.
 knn_res <- tune::tune_grid(
   object = knn_workflow,
-  preprocessor = knn_model_spec,
   resamples = data_cross_val,
   control = tune::control_resamples(save_pred = TRUE)
 )
 
-# Select 'best' fit (in terms of accuracy).
+# Select the best fit based on accuracy.
 knn_best_fit <- 
   knn_res |> 
   tune::select_best(metric = 'accuracy')
 
-# Use the 'best' model params for our final model.
+# Finalize the workflow with the best parameters.
 knn_final_workflow <- 
   knn_workflow |>
   tune::finalize_workflow(knn_best_fit)
 
-# Fit our model using the 'best' params.
+# Fit the final model using the best parameters.
 knn_final_fit <- 
   knn_final_workflow |> 
   tune::last_fit(data_split)
@@ -92,17 +89,11 @@ parallel::stopCluster(clusters)
 # Stop timer.
 tictoc::toc()
 
-# Choose the best model params.
+# Choose the best model parameters based on ROC AUC.
 knn_res |> tune::select_best(metric = 'roc_auc')
 
 ```
 
-
-```{r}
-# knn_res |> tune::collect_metrics()
-# knn_final_fit |> tune::collect_metrics()
-
-```
 
 ### Model Performance
 

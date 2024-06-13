@@ -58,31 +58,28 @@ cores_no <- parallel::detectCores() - 1
 #' Start timer.
 tictoc::tic()
 
-# Create cores_no clusters.
+# Create and register clusters.
 clusters <- parallel::makeCluster(cores_no)
-
-# Start clusters.
 doParallel::registerDoParallel(clusters)
 
 # Fine-tune the model params.
 svm_res <- tune::tune_grid(
   object = svm_workflow,
-  preprocessor = svm_model_spec,
   resamples = data_cross_val,
   control = tune::control_resamples(save_pred = TRUE)
 )
 
-# Select 'best' fit (in terms of accuracy).
+# Select the best fit based on accuracy.
 svm_best_fit <- 
   svm_res |> 
   tune::select_best(metric = 'accuracy')
 
-# Use the 'best' model params for our final model.
+# Finalize the workflow with the best parameters.
 svm_final_workflow <- 
   svm_workflow |>
   tune::finalize_workflow(svm_best_fit)
 
-# Fit our model using the 'best' params.
+# Fit the final model using the best parameters.
 svm_final_fit <- 
   svm_final_workflow |> 
   tune::last_fit(data_split)
@@ -93,7 +90,7 @@ parallel::stopCluster(clusters)
 # Stop timer.
 tictoc::toc()
 
-# Choose the best model params.
+# Choose the best model parameters based on ROC AUC.
 svm_res |> tune::select_best(metric = 'roc_auc')
 
 ```
