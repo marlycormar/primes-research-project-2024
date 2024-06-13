@@ -27,7 +27,7 @@ data_rec <- readRDS(here::here('data/data_rec.rds'))
 
 ```
 
-We will create an SVM model specification and workflow indicating the model hyper-parameters: a cost value and `rbf_sigma`, a positive number for radial basis function. To optimize our model, we will use the `tune::tune()` function to find optimal values of these parameters in terms of model accuracy.
+We will create an SVM model specification and workflow indicating the model hyperparameters: a cost value and `rbf_sigma`, a positive number for radial basis function. To optimize our model, we will use the `tune::tune()` function to find optimal values of these parameters in terms of model accuracy.
 
 ```{r svm-workflow, cache=TRUE, echo=TRUE}
 
