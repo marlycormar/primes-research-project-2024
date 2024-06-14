@@ -35,12 +35,12 @@ Let us start by specifying the ANN model and creating the model workflow. Specif
 # Create model specification.
 ann_model_spec <-
   parsnip::mlp(
-    epochs = 1000,
-    hidden_units = 10,
-    penalty = 0.01, 
+    epochs = tune::tune(),
+    hidden_units = tune::tune(),
+    penalty = tune::tune(),
     learn_rate = 0.1
   ) |>
-  parsnip::set_engine('brulee') |>
+  parsnip::set_engine('nnet') |>
   parsnip::set_mode('classification')
 
 # Create model workflow.
