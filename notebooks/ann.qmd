@@ -35,6 +35,9 @@ data_cross_val <- readRDS(here::here('data/data_cross_val.rds'))
 test_outcome <- readRDS(here::here('data/test_outcome.rds'))
 data_rec <- readRDS(here::here('data/data_rec.rds'))
 
+# Set random seed.
+set.seed(3145)
+
 ```
 
 We are ready to specify the ANN model and create the model workflow. Specifically, we will define a multilayer perceptron model (i.e., a single layer, feed-forward neural network). The parameters of interest would be the number of epochs (or training iterations), the number of hidden units (`hidden_units`), the penalty (or weight decay), and the learning rate.

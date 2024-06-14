@@ -23,6 +23,9 @@ data_cross_val <- readRDS(here::here('data/data_cross_val.rds'))
 test_outcome <- readRDS(here::here('data/test_outcome.rds'))
 data_rec <- readRDS(here::here('data/data_rec.rds'))
 
+# Set random seed.
+set.seed(3145)
+
 ```
 
 Below we create a KNN model specification and workflow indicating the model hyperparameters: a number of neighbors (i.e., $k$), a weight function, and a distance function. To optimize our model, we will use the `tune::tune()` function to find optimal values of these parameters based on model accuracy.

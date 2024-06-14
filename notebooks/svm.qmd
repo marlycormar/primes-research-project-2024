@@ -24,6 +24,9 @@ data_cross_val <- readRDS(here::here('data/data_cross_val.rds'))
 test_outcome <- readRDS(here::here('data/test_outcome.rds'))
 data_rec <- readRDS(here::here('data/data_rec.rds'))
 
+# Set random seed.
+set.seed(3145)
+
 ```
 
 We will create an SVM model specification and workflow, indicating the model hyperparameter $\sigma$ (or `rbf_sigma`). To optimize our model, we will use the `tune::tune()` function to find the optimal value of this parameter in terms of model accuracy.

@@ -19,6 +19,9 @@ The new function $f_i$ is now computed as $f_{i-1}(X) + \alpha\theta_i(X)$.
 ### Model Workflow
 
 ```{r gbm-load-data}
+
+library(tidymodels)
+
 # Read cleaned data.
 cleaned_data <- readr::read_csv(here::here('data', 'cleaned-data.csv'))
 
@@ -27,6 +30,9 @@ data_split <- readRDS(here::here('data/data_split.rds'))
 data_cross_val <- readRDS(here::here('data/data_cross_val.rds'))
 test_outcome <- readRDS(here::here('data/test_outcome.rds'))
 data_rec <- readRDS(here::here('data/data_rec.rds'))
+
+# Set random seed.
+set.seed(3145)
 
 ```
 

@@ -33,6 +33,9 @@ data_cross_val <- readRDS(here::here('data/data_cross_val.rds'))
 test_outcome <- readRDS(here::here('data/test_outcome.rds'))
 data_rec <- readRDS(here::here('data/data_rec.rds'))
 
+# Set random seed.
+set.seed(3145)
+
 ```
 
 ```{r lr-workflow, cache=TRUE, echo=TRUE}
