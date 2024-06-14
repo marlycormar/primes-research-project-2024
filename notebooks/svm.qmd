@@ -8,8 +8,8 @@ SVM is particularly effective in high-dimensional spaces and is useful when the 
 
 The most commonly used kernel in SVM is the Radial Basis Function (RBF) kernel, also known as the Gaussian kernel. The RBF kernel maps input features into an infinite-dimensional space, allowing SVM to create complex decision boundaries. The RBF kernel function is defined as:
 
-$$K(x_i, x_j) = e^{- \frac{|| x_i - x_j ||^2}{2 \sigma^2}}$$
-where $x_i$ and $x_j$ are the input feature vectors, and $\sigma$ is a parameter that determines the spread of the kernel and controls the influence of individual training samples.
+$$K(X_i, X_j) = e^{- \frac{|| X_i - X_j ||^2}{2 \sigma^2}}$$
+where $X_i$ and $X_j$ are the input feature vectors, and $\sigma$ is a parameter that determines the spread of the kernel and controls the influence of individual training samples.
 
 ### Model Workflow
 
