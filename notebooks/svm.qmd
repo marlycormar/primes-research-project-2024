@@ -2,15 +2,14 @@
 
 ### Model Description
 
-The Support Vector Machine (SVM) is a non-parametric and supervised algorithm for classification: the SVM generates a hyper-plane or curve that splits the sample space into two regions, and given a test observation, its classification is based on the region that it falls in.
+Support Vector Machines (SVM) are powerful supervised learning algorithms used for both classification and regression tasks. For classification, SVM works by finding the hyperplane that best separates data points of different classes in a high-dimensional space. The optimal hyperplane is determined by maximizing the margin between the closest points of the classes, known as support vectors.
 
-In detail, the SVM maps the training data into a higher-dimensional space using kernels. Two common kernels are the polynomial kernel, which maps each observation via a polynomial of degree $d$, and the radial kernel, which maps each observation via its distance from a point. As a result, the training data now has a roughly linear decision boundary, so the simpler support vector classifier can be applied: generate a hyperplane $\beta_0+\beta_1 x_{i1}+\dots + \beta_p x_{ip}=0$ that mostly separates the two categories by solving the optimization problem of maximizing $M$, the width of the margin, subject to the conditions:
+SVM is particularly effective in high-dimensional spaces and is useful when the number of dimensions exceeds the number of samples. It can employ various kernel functions—such as linear, polynomial, and radial basis function (RBF)—to handle non-linear classification by mapping input features into higher-dimensional spaces.
 
-1.  $\sum_{j=1}^p \beta_j^2 = 1$
-2.  $y_i(\beta_0+\beta_1 x_{i1}+\dots + \beta_p x_{ip}) \ge M(1-\epsilon_i)$
-3.  $\epsilon_i \ge 0$ and $\sum_{i=1}^n \epsilon_i \le C$.
+The most commonly used kernel in SVM is the Radial Basis Function (RBF) kernel, also known as the Gaussian kernel. The RBF kernel maps input features into an infinite-dimensional space, allowing SVM to create complex decision boundaries. The RBF kernel function is defined as:
 
-Here each $\epsilon_i$ is a small error term, and $C$ is parameter for which larger $C$ corresponds to higher tolerance of violations of the margin. We tune these parameters below.
+$$K(x_i, x_j) = e^{- \frac{|| x_i - x_j ||^2}{2 \sigma^2}}$$
+where $x_i$ and $x_j$ are the input feature vectors, and $\sigma$ is a parameter that determines the spread of the kernel and controls the influence of individual training samples.
 
 ### Model Workflow
 
@@ -27,13 +26,15 @@ data_rec <- readRDS(here::here('data/data_rec.rds'))
 
 ```
 
-We will create an SVM model specification and workflow indicating the model hyperparameters: a cost value and `rbf_sigma`, a positive number for radial basis function. To optimize our model, we will use the `tune::tune()` function to find optimal values of these parameters in terms of model accuracy.
+We will create an SVM model specification and workflow, indicating the model hyperparameter $\sigma$ (or `rbf_sigma`). To optimize our model, we will use the `tune::tune()` function to find the optimal value of this parameter in terms of model accuracy.
 
 ```{r svm-workflow, cache=TRUE, echo=TRUE}
 
 # Create model specification.
 svm_model_spec <-
-  parsnip::svm_rbf(cost = tune::tune(), rbf_sigma = tune::tune()) |>
+  parsnip::svm_rbf(
+    rbf_sigma = tune::tune()
+  ) |>
   parsnip::set_mode('classification') |>
   parsnip::set_engine('kernlab')
 
@@ -47,7 +48,7 @@ svm_workflow <- workflows::workflow() |>
 
 ### Model Tuning and Fitting
 
-As we did for KNN, we use parallel computing to fine-tuning our model using the $10$-fold cross validation we set up earlier. We end this section by selecting the best model based on accuracy and the ROC curve.
+As we did for KNN, we use parallel computing to fine-tuning our model using the $10$-fold cross-validation we set up earlier. We end this section by selecting the best model based on accuracy and the ROC curve.
 
 
 ```{r svm-param-tunning, cache=TRUE, warning=FALSE, echo=TRUE}
