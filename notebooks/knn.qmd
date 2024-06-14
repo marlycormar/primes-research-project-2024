@@ -2,10 +2,13 @@
 
 ### Model Description
 
-The K-Nearest Neighbors (KNN) algorithm is a nonparametric algorithm which classifies a given sample using the training data as a proximity reference. Given the training data, the algorithm classifies a point $X$ as the most common class label among its $k$ nearest training data points, where $k$ is a predetermined hyperparameter. The KNN classifier simply uses neighboring points to draw conclusions about a given point -- and so no model training takes place; the algorithm just memorizes the training data itself (this is usually referred to as a "lazy" algorithm).
+The K-Nearest Neighbors (KNN) algorithm is a nonparametric method used for classification. It classifies a given sample based on the proximity to the training data. The algorithm determines the class of a point $X$ by identifying the most common class label among its $k$ nearest neighbors, where $k$ is a predetermined hyperparameter. Unlike other algorithms, the KNN classifier does not involve training a model; instead, it memorizes the training data, making it a "lazy" algorithm.
 
-The parameters of the classifier are the hyperparameters $k$, the distance measure, and the weight function. Common examples distance measure used are the Euclidean distance, Manhattan distance, and Minkowski distance. The performance of the KNN classifier is obviously dependent on $k$ -- and generally, the optimal value of $k$ depends on the *bias-variance tradeoff*. Small values of $k$ result in low bias, but high variance, which means the training error is low, but test error is high. On the other hand, large values of $k$ result in high bias, but low variance. This means that the training error itself is high, but the training and test performances are comparable, and so the model underfits. Also, it is recommended to choose $k$ such that no classification ties are possible. When we have two classes (like we do here), this means choosing an odd $k$. To increase model flexibility, we may also use a weighted version of the KNN algorithm (where each of the $k$ nearest neighbors is weighted inversely based on the distance from the test point). We tune each of these three parameters below.
+The primary hyperparameters of the KNN algorithm are $k$, the distance measure, and the weight function. Common distance measures include Euclidean distance, Manhattan distance, and Minkowski distance.
 
+Choosing the optimal value for $k$ is crucial and involves balancing the bias-variance tradeoff. A small $k$ results in low bias and high variance. Low bias means the model captures the complexity of the training data very well, but high variance means the model is highly sensitive to the specifics of the training data, often leading to overfitting and higher test errors. As $k$ increases, the model averages over more neighbors, which smooths out the predictions and reduces the model's sensitivity to individual data points, thus reducing variance. Therefore, a large $k$ results in high bias and low variance. The model may become too simplistic, leading to higher bias, but it becomes less sensitive to the training data, making it more robust to noise and better at generalizing to new data.
+
+To avoid classification ties, it is advisable to select $k$ appropriately. For binary classification, this typically means choosing an odd $k$. Additionally, to enhance model flexibility, a weighted version of KNN can be employed, where the influence of each of the $k$ nearest neighbors is weighted inversely by their distance to the test point. We will tune these three parameters below.
 
 
 ### Model Workflow
@@ -22,7 +25,7 @@ data_rec <- readRDS(here::here('data/data_rec.rds'))
 
 ```
 
-Now let us create a KNN model specification and workflow indicating the model hyperparameters: a number of neighbors, a weight function, and a distance function. To optimize our model, we will use the `tune::tune()` function to find optimal values of these parameters in terms of model accuracy. 
+Below we create a KNN model specification and workflow indicating the model hyperparameters: a number of neighbors (i.e., $k$), a weight function, and a distance function. To optimize our model, we will use the `tune::tune()` function to find optimal values of these parameters based on model accuracy.
 
 ```{r knn-workflow, cache=TRUE, echo=TRUE}
 
@@ -45,9 +48,9 @@ knn_workflow <- workflows::workflow() |>
 
 ### Model Tuning and Fitting
 
-We then move to actually running our prepared workflow. In order to make the computation as fast as possible, we use parallel computing, i.e., the computation is distributed and simultaneously done over different cores.
+Next, we run our prepared workflow. To speed up the computation, we utilize parallel computing, distributing the tasks across multiple cores.
 
-Now we fine-tune the model hyperparameters (namely $k$, the distance function, and the weight function) using the $10$-fold cross validation we set up earlier. Then we select the best model based on accuracy and the ROC curve.
+We fine-tune the model hyperparameters (namely $k$, the distance function, and the weight function) using the $10$-fold cross-validation setup. We then select the best model based on accuracy and the ROC curve.
 
 ```{r knn-param-tunning, cache=TRUE, warning=FALSE, echo=TRUE}
 
