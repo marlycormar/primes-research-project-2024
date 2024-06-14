@@ -15,9 +15,6 @@ where $X_i$ and $X_j$ are the input feature vectors, and $\sigma$ is a parameter
 
 ```{r svm-load-data}
 
-# Read cleaned data.
-cleaned_data <- readr::read_csv(here::here('data', 'cleaned-data.csv'))
-
 # Load the data already computed in the index.qmd file.
 data_split <- readRDS(here::here('data/data_split.rds'))
 data_cross_val <- readRDS(here::here('data/data_cross_val.rds'))
