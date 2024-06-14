@@ -51,7 +51,7 @@ knn_workflow <- workflows::workflow() |>
 
 Next, we run our prepared workflow. To speed up the computation, we utilize parallel computing, distributing the tasks across multiple cores.
 
-We fine-tune the model hyperparameters (namely $k$, the distance function, and the weight function) using the $10$-fold cross-validation setup. We then select the best model based on accuracy and the ROC curve.
+We fine-tune the model hyperparameters (namely $k$, the distance function, and the weight function) using the $10$-fold cross-validation setup. We then select the best model based on accuracy.
 
 ```{r knn-param-tunning, cache=TRUE, warning=FALSE, echo=TRUE}
 
