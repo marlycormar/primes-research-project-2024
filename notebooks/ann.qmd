@@ -1,9 +1,9 @@
 
-## Artificial Neural Networks
+## Artificial Neural Network
 
 ### Model Description
 
-The next model we will apply to our data is the Artificial Neural Networks (ANNs). These are also called by their more simple name, Neural Networks. The purpose of an ANN is to take the input vector of variables $X = (X_1, X_2, \cdots, X_p)$ and build the function $\hat{f}(X)$ (that is non-linear) which estimates the appropriate response $Y$ for this input. In our case, we have inputs $(X_1, X_2, \cdots, X_{16})$ of $16$ parameters, and with these we want to predict whether or not the patient will have recurrent DTF. 
+The next model we will apply to our data is the Artificial Neural Network (ANN). These are also called by their more simple name, Neural Network. The purpose of an ANN is to take the input vector of variables $X = (X_1, X_2, \cdots, X_p)$ and build the function $\hat{f}(X)$ (that is non-linear) which estimates the appropriate response $Y$ for this input. In our case, we have inputs $(X_1, X_2, \cdots, X_{16})$ of $16$ parameters, and with these we want to predict whether or not the patient will have recurrent DTF. 
 
 We must start by discussing the mathematical framework of a neural network. The initial inputs make up what is called the *input layer*. After the input layer, we have a certain number of *hidden layers*. Let us assume for now that we only have one hidden layer. Suppose this hidden layer has $K$ *hidden units*. Then the function $\hat{f}(X)$ takes the following form: $$\hat{f}(X)=\beta_0+\sum_{k=1}^K \beta_kh_k(X)=\beta_0+\sum_{k=1}^K \beta_kg(w_{k0}+\sum_{j=1}^p w_{kj}X_j).$$ Let's unpack this. We need to start by specifying an activation function $g$. A common activation function is the *sigmoid function* $g(z)=\frac{e^z}{1+e^z}$. It is important that $g$ is non linear, else $\hat{f}$ is a simple linear function. All the $\beta_i$s and $w_{ij}$s are parameters that we need to learn (estimate) from our training data. The *activations* $$A_k=h_k(X)=g(w_{k0}+\sum_{j=1}^p w_{kj}X_j)$$ are functions of the input $X$ that depend on the learned weights $w$. The idea is that after many epochs, our estimates for the $\beta$ and $w$ parameters are accurate enough that $\hat{f}$ is an accurate predictor of $f$. 
 
