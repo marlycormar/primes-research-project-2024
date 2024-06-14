@@ -30,7 +30,7 @@ set.seed(3145)
 
 Let us start by specifying the ANN model and creating the model workflow. Specifically, we will define a multilayer perceptron model (i.e., a single-layer, feed-forward neural network). The key parameters we will set include the number of epochs (or training iterations), the number of hidden units, the penalty (or weight decay), and the learning rate.
 
-```{r ann-workflow, cache=TRUE, echo=TRUE}
+```{r ann-workflow, echo=TRUE, cache=TRUE}
 
 # Create model specification.
 ann_model_spec <-
@@ -55,7 +55,7 @@ ann_workflow <- workflows::workflow() |>
 
 We will proceed to tune all the parameters except for the learning rate. This is because the `nnet` package does not support tuning the learning rate.
 
-```{r ann-param-tunning, echo=TRUE}
+```{r ann-param-tunning, echo=TRUE, cache=TRUE}
 
 #' Check number of available cores.
 cores_no <- parallel::detectCores() - 1
@@ -112,7 +112,7 @@ ann_pred <-
 ```
 
 
-```{r ann-performance, cache=TRUE}
+```{r ann-performance}
 #| label: tbl-ann-performance
 #| tbl-cap: "ANN Performance Metrics: Accuracy, Precision, Recall, and Specificity."
 #| tbl-alt: "ANN Performance Metrics: Accuracy, Precision, Recall, and Specificity."
