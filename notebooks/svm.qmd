@@ -91,9 +91,6 @@ parallel::stopCluster(clusters)
 # Stop timer.
 tictoc::toc()
 
-# Choose the best model parameters based on ROC AUC.
-svm_res |> tune::select_best(metric = 'roc_auc')
-
 ```
 
 ### Model Performance
