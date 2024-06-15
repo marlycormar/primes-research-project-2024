@@ -128,7 +128,25 @@ To assess model performance, we will compare the accuracy, precision, recall, an
 
 - Specificity: proportion of correctly classified negative observations among all actual negative observations or $\frac{TN}{TN + FP}$.
 
-```{r}
+```{r message=FALSE}
+#| label: tbl-overall-performance
+#| tbl-cap: 'Performance Comparison: Accuracy, Precision, Recall, and Specificity.'
+#| tbl-alt: 'Performance Comparison: Accuracy, Precision, Recall, and Specificity.'
+
+# # Set table's theme.
+# theme <- reactable::reactableTheme(
+#   borderColor = '#dfe2e5',
+#   stripedColor = '#f6f8fa', 
+#   highlightColor = '#f0f5f9',
+#   cellPadding = '8px 12px'
+# )
+# 
+# # Set bar theme.
+# bar_chart <- function(label, width = "100%", height = "1rem", fill = "#00bfc4", background = NULL) {
+#   bar <- htmltools::div(style = list(background = fill, width = width, height = height))
+#   chart <- htmltools::div(style = list(flexGrow = 1, marginLeft = "0.5rem", background = background), bar)
+#   htmltools::div(style = list(display = "flex", alignItems = "center"), label, chart)
+# }
 
 models_performance <-
   dplyr::bind_rows(
@@ -145,13 +163,43 @@ models_performance <-
     readr::read_csv('data/rf-metrics.csv') |>
       dplyr::mutate('Model' = 'Random Forest', .before = 1)
   ) |>
-  dplyr::group_by(Metric) |>
-  dplyr::filter(Value == max(Value))
+  dplyr::filter(Value == max(Value), .by = Metric) |>
+  dplyr::reframe(Model = paste0(Model, collapse = ', '), .by = c(Metric, Value)) |>
+  dplyr::select(Metric, Model, Value) |>
+  dplyr::arrange(Metric) |>
+  dplyr::mutate(Value = paste0(round(Value), '%'))
+models_performance
 
-acc_best <- models_performance |> dplyr::filter(Metric == 'Accuracy')
-prec_best <- models_performance |> dplyr::filter(Metric == 'Precision')
-rec_best <- models_performance |> dplyr::filter(Metric == 'Recall')
-spe_best <- models_performance |> dplyr::filter(Metric == 'Specificity')
+gt::gt(models_performance) |>
+  gt::tab_style(
+    style = list(gt::cell_fill(color = "white")),
+    locations = gt::cells_body(gt::everything())
+  ) |>
+  gt::cols_width(gt::everything() ~ gt::pct(100/3))
+
+# models_performance |>
+#   reactable::reactable(
+#     searchable = FALSE, 
+#     resizable = TRUE,
+#     onClick = 'expand',
+#     bordered = TRUE,
+#     highlight = TRUE, 
+#     compact = TRUE,
+#     height = 'auto',
+#     theme = theme,
+#     columns = list(
+#       Value = reactable::colDef(
+#         align = "left", 
+#         cell = function(value) {
+#           bar_chart(
+#             label = value,
+#             width = value,
+#             fill = "#fc5185",
+#             background = "#e1e1e1"
+#           )
+#         })
+#     )
+#   )
 
 ```
 
