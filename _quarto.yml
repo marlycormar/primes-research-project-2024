@@ -18,13 +18,12 @@ format:
       hypothesis: true
   # docx: default
   # jats: default
-  # aft-pdf:
-  #   notebook-links: global
-  #   notebook-view: false
-  #   default:
-  #     keep-tex: true
+  aft-pdf:
+    notebook-links: global
+    notebook-view: false
+    default:
+      keep-tex: true
   pdf:
-    prefer-html: true
     notebook-links: global
     notebook-view: false
     default:
