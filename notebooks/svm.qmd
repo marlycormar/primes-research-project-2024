@@ -26,17 +26,19 @@ set.seed(3145)
 
 ```
 
-We will create an SVM model specification and workflow, indicating the model hyperparameter $\sigma$ (or `rbf_sigma`). To optimize our model, we will use the `tune::tune()` function to find the optimal value of this parameter in terms of model accuracy.
+We will create an SVM model specification and workflow, indicating the model hyperparameters $\sigma$ (or `rbf_sigma`) and `cost`. The `rbf_sigma` parameter controls the influence of individual training examples, while the `cost` parameter controls the trade-off between achieving a low training error and a low testing error, which affects the model's ability to generalize. To optimize our model, we will use the `tune::tune()` function to find the optimal values of these parameters in terms of model accuracy.
 
-```{r svm-workflow, cache=TRUE, echo=TRUE}
+
+```{r svm-workflow, echo=TRUE}
 
 # Create model specification.
 svm_model_spec <-
   parsnip::svm_rbf(
+    cost = tune::tune(),
     rbf_sigma = tune::tune()
   ) |>
-  parsnip::set_mode('classification') |>
-  parsnip::set_engine('kernlab')
+  parsnip::set_engine('kernlab') |>
+  parsnip::set_mode('classification')
 
 # Create model workflow.
 svm_workflow <- workflows::workflow() |>
@@ -48,10 +50,10 @@ svm_workflow <- workflows::workflow() |>
 
 ### Model Tuning and Fitting
 
-As we did for KNN, we use parallel computing to fine-tuning our model using the $10$-fold cross-validation we set up earlier. We end this section by selecting the best model based on accuracy and the ROC curve.
+As we did for KNN, we use parallel computing to fine-tuning our model using the $10$-fold cross-validation we set up earlier. We end this section by selecting the best model based on accuracy.
 
 
-```{r svm-param-tunning, cache=TRUE, warning=FALSE, echo=TRUE}
+```{r svm-param-tunning, echo=TRUE}
 
 #' Check number of available cores.
 cores_no <- parallel::detectCores() - 1
@@ -97,7 +99,7 @@ tictoc::toc()
 
 We then apply our selected model to the test set. The final metrics are given in @tbl-svm-performance.
 
-```{r svn-performance, cache=TRUE, echo=TRUE}
+```{r svm-performance, echo=TRUE}
 
 # Use the best fit to make predictions on the test data.
 svm_pred <- 
