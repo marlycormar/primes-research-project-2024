@@ -95,7 +95,8 @@ male_rec_no_perc <- round(male_rec_no/males_no*100, 1)
 
 After removing duplicates, our data has `r nrow(cleaned_data)` observations. Out of the `r ncol(cleaned_data)` variables, `r ncol(cleaned_data) - 1` will be used as features, leaving `Recurred` as the target variable to be predicted. Among the patients, there is a significant disparity between males and females: `r glue::glue('{fem_no}({fem_perc}%)')` are females and `r glue::glue('{males_no}({males_perc}%)')` are males. Males are about evenly distributed in terms of cancer recurrence with `r glue::glue('{male_rec_yes_perc}%')` total recurred cases. On the other hand, females are not evenly distributed in terms of cancer recurrence with `r glue::glue('{fem_rec_yes_perc}%')` total recurred cases (see @fig-gender-dist).
 
-<!-- ```{r echo=FALSE} -->
+
+<!-- ```{r out.width = '420px'} -->
 <!-- #| label: fig-gender-dist -->
 <!-- #| fig-cap: 'Gender Distribution by Cancer Recurrence.' -->
 <!-- #| fig-alt: "Gender Distribution by Cancer Recurrence." -->
@@ -103,6 +104,7 @@ After removing duplicates, our data has `r nrow(cleaned_data)` observations. Out
 <!-- # knitr::include_graphics(here::here('images/Gender-plot.png')) -->
 <!-- knitr::include_graphics(here::here('images/gender_dist_plot.png')) -->
 <!-- ``` -->
+
 
 ```{r fig-gender-dist}
 #| label: fig-gender-dist
@@ -135,14 +137,16 @@ gender_dist_plot <- cleaned_data |>
                  legend = list(title = list(text = '<b>Recurred</b>'))
   )
 
-plotly::save_image(gender_dist_plot, here::here('images/gender_dist_plot.png'))
+plotly::save_image(gender_dist_plot, here::here('images/gender_dist_plot.png'),
+                   width = 500, scale = 4)
 gender_dist_plot
 
 ```
 
 The distribution of `Age` by cancer recurrence is shown in @fig-age-dist. Note that, in general, older patients are more likely to recur.
 
-<!-- ```{r echo=FALSE} -->
+
+<!-- ```{r out.width = '420px'} -->
 <!-- #| label: fig-age-dist -->
 <!-- #| fig-cap: "Age Distribution by Cancer Recurrence" -->
 <!-- #| fig-alt: "Age Distribution by Cancer Recurrence" -->
@@ -150,6 +154,7 @@ The distribution of `Age` by cancer recurrence is shown in @fig-age-dist. Note t
 <!-- # knitr::include_graphics(here::here('images/Age-plot.png')) -->
 <!-- knitr::include_graphics(here::here('images/age_dist_plot.png')) -->
 <!-- ``` -->
+
 
 ```{r fig-age-dist}
 #| label: fig-age-dist
@@ -174,7 +179,7 @@ age_dist_plot <- cleaned_data |>
                  legend = list(title = list(text = '<b>Recurred</b>'))
   )
 
-plotly::save_image(age_dist_plot, here::here('images/age_dist_plot.png'))
+plotly::save_image(age_dist_plot, here::here('images/age_dist_plot.png'), scale = 4)
 age_dist_plot
 
 ```
@@ -199,7 +204,8 @@ dt_summary <- tibble::as_tibble(dt_summary) |>
 
 Besides `Age`, the rest of the features are categorical. One interesting categorical feature is `Adenopathy`. It represents the presence of swollen lymph nodes during physical examination. The different adenopathy types observed are no adenopathy, anterior right, anterior left, bilateral (i.e., both sides of the body), posterior, and extensive (i.e., involves all the locations). Note the high correlation between swollen lymph nodes and DTC recurrence rate (see @fig-aden-dist).
 
-<!-- ```{r echo=FALSE} -->
+
+<!-- ```{r out.width = '420px'} -->
 <!-- #| label: fig-aden-dist -->
 <!-- #| fig-cap: "Adenopathy Distribution by cancer recurrence." -->
 <!-- #| fig-alt: "Adenopathy Distribution by cancer recurrence." -->
@@ -208,6 +214,7 @@ Besides `Age`, the rest of the features are categorical. One interesting categor
 <!-- knitr::include_graphics(here::here('images/aden_dist_plot.png')) -->
 
 <!-- ``` -->
+
 
 ```{r fig-aden-dist}
 #| label: fig-aden-dist
@@ -246,7 +253,7 @@ aden_dist_plot <- cleaned_data |>
                  legend = list(title = list(text = '<b>Recurred</b>'))
   )
 
-plotly::save_image(aden_dist_plot, here::here('images/aden_dist_plot.png'))
+plotly::save_image(aden_dist_plot, here::here('images/aden_dist_plot.png'), scale = 4)
 aden_dist_plot
 
 ```
