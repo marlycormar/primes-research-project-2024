@@ -1,5 +1,5 @@
 Metric,Value
-Accuracy,94.5
-Precision,84.6
-Recall,95.7
-Specificity,94.1
+Accuracy,78
+Precision,23.1
+Recall,100
+Specificity,76.5
