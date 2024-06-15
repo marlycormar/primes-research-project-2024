@@ -1,24 +1,18 @@
-## Gradient Boosting Machines (GBMs) - XGBoost
+## Extreme Gradient Boosting
 
 ### Model Description
-Gradient boosting is an ensemble learning method, meaning that it combines the results of multiple different models (generally decision trees) into one. It does this sequentially, involving function minimization with gradient descent (hence the name). XGBoost, or eXtreme Gradient Boosting, is a popular algorithm for gradient boosting. It is designed to be efficient, flexible, and portable. It employs regularization techniques to prevent overfitting, and allows users to define their own object functions, making it adaptable to various types of supervised learning tasks, including regression, classification, and ranking problems. XGBoost also uses a technique called tree pruning to control the complexity of individual trees within the ensemble, preventing them from growing too deep and reducing the likelihood of overfitting.
 
-Let's dive into the details. Consider the following flowchart of the model, from @xgboostarticle.
+Extreme Gradient Boosting (XGBoost) is an advanced implementation of gradient boosting designed to enhance performance and speed. It builds upon the principles of gradient boosting to provide a highly efficient, flexible, and portable library that supports both regression and classification tasks. XGBoost has become one of the most popular machine learning algorithms due to its high performance and scalability.
 
-```{r}
-#| label: fig-xgboost-overview
-#| fig-cap: 'Flowchart of the XGBoost algorithm.'
+XGBoost operates by sequentially adding decision trees to an ensemble. Each tree is built to correct the errors of the previous trees in the ensemble. The process begins with an initial model, typically a simple model such as the mean of the target variable. At each subsequent step, a new decision tree is added to the model to predict the residuals (errors) of the previous trees. Each tree is built by optimizing an objective function that combines a loss function and a regularization term. The regularization term helps prevent overfitting by penalizing the complexity of the model. After each tree is added, the residuals are updated. The new tree aims to minimize these residuals, improving the overall model's performance.
 
-knitr::include_graphics(here::here('images/XGBoost.png'))
-```
+The node splitting in each tree is guided by an objective function, which typically involves minimizing a loss function (such as mean squared error for regression or log loss for classification) while including a regularization term. The final prediction is the sum of the predictions from all the trees in the ensemble. This process is depicted in the attached flowchart, showing how each tree contributes to the final model.
 
-We start with a simple model that returns a constant value (a tree with a single leaf node), $f_0(X)$. It then learns a new model $f_1(X, \theta_1)$ which fits the residual of $f_0(X)$. Then, for $2\le i\le k$, where $k$ is the pre-decided number of iterations, we compute the new model $f_i(X, \theta_i)$ that fits the residual of $f_{i-1}(X, \theta_i)$. The resulting model is $\hat{Y}=\sum_{i=1}^k f_i(X,\theta_i)$, the sum of the predictions from each model. The key step is how each $f_i$ model is recursively computed to fit the residual of the previous model. We need a loss function $L(Y, f(X))$ and a learning rate $\alpha$. At each step, we compute the gradient and hessian $\hat{g}_i$ and $\hat{h}_i$ by taking the first and second partial derivatives (respectively) of $L(Y, f_{i-1}(X))$ with respect to $f_{i-1}(x)$. We then compute the function $\theta_i$ with a minimization problem:
-$$\theta_i(X)=\arg\min\sum_{x\in X}\hat{h}_m(x)\left(\theta_i(x)-\frac{\hat{g}_i(x)}{\hat{h}_i(x)}\right)^2.$$
-The new function $f_i$ is now computed as $f_{i-1}(X) + \alpha\theta_i(X)$. 
+XGBoost has several key advantages. It incorporates both L1 (Lasso) and L2 (Ridge) regularization to prevent overfitting and manage model complexity. The algorithm supports parallel processing, significantly speeding up the training process. XGBoost can handle missing values internally, making it robust to incomplete datasets. Additionally, users can define custom objective functions and evaluation metrics, allowing for flexibility in optimization.
 
 ### Model Workflow
 
-```{r gbm-load-data}
+```{r xgboost-load-data}
 
 library(tidymodels)
 
@@ -33,23 +27,34 @@ set.seed(3145)
 
 ```
 
-```{r gbm-workflow, cache=TRUE, echo=TRUE}
+To effectively train our XGBoost model and find the optimal hyperparameters, we will set up a workflow that includes model specification and data preprocessing. The hyperparameters to be tuned include:
+
+- `tree_depth`: Controls the maximum depth of each tree, impacting the model's complexity.
+- `min_n`: Specifies the minimum number of observations that must exist in a node for a split to be attempted, preventing overly specific branches and encouraging generalization.
+- `loss_reduction`: Sets the minimum reduction in the loss function required to make a further partition on a leaf node, helping to control overfitting by making the algorithm more conservative.
+- `sample_size`: Determines the fraction of the training data used for fitting each individual tree, introducing randomness and preventing overfitting.
+- `mtry`: Sets the number of features considered when looking for the best split, adding variability to enhance generalization.
+- `learn_rate`: Also known as the shrinkage parameter, controls the rate at which the model learns. Smaller learning rates can lead to better performance by allowing the model to learn more slowly and avoid overfitting.
+
+```{r xgboost-workflow, cache=TRUE, echo=TRUE}
 
 # Create model specification.
-gbm_model_spec <- 
+xgboost_model_spec <- 
   boost_tree(
     trees = 1000,
-    tree_depth = tune(), min_n = tune(),
+    tree_depth = tune(), 
+    min_n = tune(),
     loss_reduction = tune(),
-    sample_size = tune(), mtry = tune(),
+    sample_size = tune(), 
+    mtry = tune(),
     learn_rate = tune()
   ) |>
   set_engine('xgboost') |>
   set_mode('classification')
 
 # Create model workflow.
-gbm_workflow <- workflows::workflow() |>
-  workflows::add_model(gbm_model_spec) |>
+xgboost_workflow <- workflows::workflow() |>
+  workflows::add_model(xgboost_model_spec) |>
   workflows::add_recipe(data_rec)
 
 ```
@@ -57,7 +62,7 @@ gbm_workflow <- workflows::workflow() |>
 ### Model Tuning and Fitting
 
 
-```{r gbm-param-tunning, cache=TRUE, warning=FALSE, echo=TRUE}
+```{r xgboost-param-tunning, cache=TRUE, warning=FALSE, echo=TRUE}
 
 #' Check number of available cores.
 cores_no <- parallel::detectCores() - 1
@@ -70,25 +75,25 @@ clusters <- parallel::makeCluster(cores_no)
 doParallel::registerDoParallel(clusters)
 
 # Fine-tune the model params.
-gbm_res <- tune::tune_grid(
-  object = gbm_workflow,
+xgboost_res <- tune::tune_grid(
+  object = xgboost_workflow,
   resamples = data_cross_val,
   control = tune::control_resamples(save_pred = TRUE)
 )
 
 # Select the best fit based on accuracy.
-gbm_best_fit <- 
-  gbm_res |> 
+xgboost_best_fit <- 
+  xgboost_res |> 
   tune::select_best(metric = 'accuracy')
 
 # Finalize the workflow with the best parameters.
-gbm_final_workflow <- 
-  gbm_workflow |>
-  tune::finalize_workflow(gbm_best_fit)
+xgboost_final_workflow <- 
+  xgboost_workflow |>
+  tune::finalize_workflow(xgboost_best_fit)
 
 # Fit the final model using the best parameters.
-gbm_final_fit <- 
-  gbm_final_workflow |> 
+xgboost_final_fit <- 
+  xgboost_final_workflow |> 
   tune::last_fit(data_split)
 
 # Stop clusters.
@@ -101,13 +106,13 @@ tictoc::toc()
 
 ### Model Performance
 
-We then apply our selected model to the test set. The final metrics are given in @tbl-gbm-performance.
+We then apply our selected model to the test set. The final metrics are given in @tbl-xgboost-performance.
 
 ```{r, cache=TRUE, echo=TRUE}
 
 # Use the best fit to make predictions on the test data.
-gbm_pred <- 
-  gbm_final_fit |> 
+xgboost_pred <- 
+  xgboost_final_fit |> 
   tune::collect_predictions() |>
   dplyr::mutate(truth = factor(.pred_class))
 
@@ -115,7 +120,7 @@ gbm_pred <-
 
 
 ```{r}
-#| label: tbl-gbm-performance
+#| label: tbl-xgboost-performance
 #| tbl-cap: 'XGBoost Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
 #| tbl-alt: 'XGBoost Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
 
@@ -128,23 +133,23 @@ theme <- reactable::reactableTheme(
 )
 
 # Create metrics table.
-gbm_metrics_table <- list(
-  'Accuracy' = yardstick::accuracy_vec(truth = gbm_pred[['.pred_class']],
+xgboost_metrics_table <- list(
+  'Accuracy' = yardstick::accuracy_vec(truth = xgboost_pred[['.pred_class']],
                                        estimate = test_outcome),
-  'Precision' = yardstick::precision_vec(truth = gbm_pred[['.pred_class']],
+  'Precision' = yardstick::precision_vec(truth = xgboost_pred[['.pred_class']],
                                          estimate = test_outcome),
-  'Recall' = yardstick::recall_vec(truth = gbm_pred[['.pred_class']],
+  'Recall' = yardstick::recall_vec(truth = xgboost_pred[['.pred_class']],
                                    estimate = test_outcome),
-  'Specificity' = yardstick::specificity_vec(truth = gbm_pred[['.pred_class']],
+  'Specificity' = yardstick::specificity_vec(truth = xgboost_pred[['.pred_class']],
                                             estimate = test_outcome)
 ) |>
   dplyr::bind_cols() |>
   tidyr::pivot_longer(cols = dplyr::everything(), names_to = 'Metric', values_to = 'Value') |>
   dplyr::mutate(Value = round(Value*100, 1))
 
-readr::write_csv(x = gbm_metrics_table, file = here::here('data', 'gbm-metrics.csv'))
+readr::write_csv(x = xgboost_metrics_table, file = here::here('data', 'xgboost-metrics.csv'))
 
-gbm_metrics_table |>
+xgboost_metrics_table |>
   dplyr::mutate(Value = paste0(Value, '%')) |>
   reactable::reactable(
     searchable = FALSE, 
