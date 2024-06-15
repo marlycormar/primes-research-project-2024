@@ -2,65 +2,43 @@
 
 ### Model Description
 
-The Support Vector Machine (SVM) is a non-parametric and supervised algorithm for classification: the SVM generates a hyper-plane or curve that splits the sample space into two regions, and given a test observation, its classification is based on the region that it falls in.
+Support Vector Machines (SVM) are powerful supervised learning algorithms used for both classification and regression tasks. For classification, SVM works by finding the hyperplane that best separates data points of different classes in a high-dimensional space. The optimal hyperplane is determined by maximizing the margin between the closest points of the classes, known as support vectors.
 
-In detail, the SVM maps the training data into a higher-dimensional space using kernels. Two common kernels are the polynomial kernel, which maps each observation via a polynomial of degree $d$, and the radial kernel, which maps each observation via its distance from a point. As a result, the training data now has a roughly linear decision boundary, so the simpler support vector classifier can be applied: generate a hyperplane $\beta_0+\beta_1 x_{i1}+\dots + \beta_p x_{ip}=0$ that mostly separates the two categories by solving the optimization problem of maximizing $M$, the width of the margin, subject to the conditions:
+SVM is particularly effective in high-dimensional spaces and is useful when the number of dimensions exceeds the number of samples. It can employ various kernel functions—such as linear, polynomial, and radial basis function (RBF)—to handle non-linear classification by mapping input features into higher-dimensional spaces.
 
-1.  $\sum_{j=1}^p \beta_j^2 = 1$
-2.  $y_i(\beta_0+\beta_1 x_{i1}+\dots + \beta_p x_{ip}) \ge M(1-\epsilon_i)$
-3.  $\epsilon_i \ge 0$ and $\sum_{i=1}^n \epsilon_i \le C$.
+The most commonly used kernel in SVM is the Radial Basis Function (RBF) kernel, also known as the Gaussian kernel. The RBF kernel maps input features into an infinite-dimensional space, allowing SVM to create complex decision boundaries. The RBF kernel function is defined as:
 
-Here each $\epsilon_i$ is a small error term, and $C$ is parameter for which larger $C$ corresponds to higher tolerance of violations of the margin. We tune these parameters below.
+$$K(X_i, X_j) = e^{- \frac{|| X_i - X_j ||^2}{2 \sigma^2}}$$
+where $X_i$ and $X_j$ are the input feature vectors, and $\sigma$ is a parameter that determines the spread of the kernel and controls the influence of individual training samples.
 
 ### Model Workflow
 
-```{r, warning=FALSE, message=FALSE}
+```{r svm-load-data}
 
-# Read cleaned data.
-cleaned_data <- readr::read_csv(here::here('data', 'cleaned-data.csv'))
+# Load the data already computed in the index.qmd file.
+data_split <- readRDS(here::here('data/data_split.rds'))
+data_cross_val <- readRDS(here::here('data/data_cross_val.rds'))
+test_outcome <- readRDS(here::here('data/test_outcome.rds'))
+data_rec <- readRDS(here::here('data/data_rec.rds'))
 
-```
-
-
-```{r svm-data-split, cache=TRUE}
-
-set.seed(314)
-
-# Split data into training, validation, and test sets.
-data_split <- rsample::initial_validation_split(cleaned_data)
-train_data <- rsample::training(data_split)
-validation_data <- rsample::validation(data_split)
-test_data <- rsample::testing(data_split)
-
-# Create cross-validation collection.
-data_cross_val <- rsample::vfold_cv(train_data)
-
-# Save the test data `Recurred`.
-test_outcome <- 
-  factor(test_data$Recurred)
+# Set random seed.
+set.seed(3145)
 
 ```
 
+We will create an SVM model specification and workflow, indicating the model hyperparameters $\sigma$ (or `rbf_sigma`) and `cost`. The `rbf_sigma` parameter controls the influence of individual training examples, while the `cost` parameter controls the trade-off between achieving a low training error and a low testing error, which affects the model's ability to generalize. To optimize our model, we will use the `tune::tune()` function to find the optimal values of these parameters in terms of model accuracy.
 
-```{r svm-data-recipes, cache=TRUE}
 
-# Create recipe for the data prep.
-data_rec <- recipes::recipe(Recurred ~ ., data = train_data) |>
-  recipes::step_corr(threshold = 0.6) |>
-  recipes::step_normalize(recipes::all_numeric()) |>
-  recipes::step_dummy(recipes::all_nominal_predictors())
-
-```
-
-We will create an SVM model specification and workflow indicating the model hyper-parameters: a cost value and `rbf_sigma`, a positive number for radial basis function. To optimize our model, we will use the `tune::tune()` function to find optimal values of these parameters in terms of model accuracy.
-
-```{r svm-workflow, cache=TRUE, echo=TRUE}
+```{r svm-workflow, echo=TRUE}
 
 # Create model specification.
 svm_model_spec <-
-  parsnip::svm_rbf(cost = tune::tune(), rbf_sigma = tune::tune()) |>
-  parsnip::set_mode('classification') |>
-  parsnip::set_engine('kernlab')
+  parsnip::svm_rbf(
+    cost = tune::tune(),
+    rbf_sigma = tune::tune()
+  ) |>
+  parsnip::set_engine('kernlab') |>
+  parsnip::set_mode('classification')
 
 # Create model workflow.
 svm_workflow <- workflows::workflow() |>
@@ -72,10 +50,10 @@ svm_workflow <- workflows::workflow() |>
 
 ### Model Tuning and Fitting
 
-As we did for KNN, we use parallel computing to fine-tuning our model using the $10$-fold cross validation we set up earlier. We end this section by selecting the best model based on accuracy and the ROC curve.
+As we did for KNN, we use parallel computing to fine-tuning our model using the $10$-fold cross-validation we set up earlier. We end this section by selecting the best model based on accuracy.
 
 
-```{r svm-param-tunning, cache=TRUE, warning=FALSE, echo=TRUE}
+```{r svm-param-tunning, echo=TRUE}
 
 #' Check number of available cores.
 cores_no <- parallel::detectCores() - 1
@@ -83,31 +61,28 @@ cores_no <- parallel::detectCores() - 1
 #' Start timer.
 tictoc::tic()
 
-# Create cores_no clusters.
+# Create and register clusters.
 clusters <- parallel::makeCluster(cores_no)
-
-# Start clusters.
 doParallel::registerDoParallel(clusters)
 
 # Fine-tune the model params.
 svm_res <- tune::tune_grid(
   object = svm_workflow,
-  preprocessor = svm_model_spec,
   resamples = data_cross_val,
   control = tune::control_resamples(save_pred = TRUE)
 )
 
-# Select 'best' fit (in terms of accuracy).
+# Select the best fit based on accuracy.
 svm_best_fit <- 
   svm_res |> 
   tune::select_best(metric = 'accuracy')
 
-# Use the 'best' model params for our final model.
+# Finalize the workflow with the best parameters.
 svm_final_workflow <- 
   svm_workflow |>
   tune::finalize_workflow(svm_best_fit)
 
-# Fit our model using the 'best' params.
+# Fit the final model using the best parameters.
 svm_final_fit <- 
   svm_final_workflow |> 
   tune::last_fit(data_split)
@@ -118,16 +93,13 @@ parallel::stopCluster(clusters)
 # Stop timer.
 tictoc::toc()
 
-# Choose the best model params.
-svm_res |> tune::select_best(metric = 'roc_auc')
-
 ```
 
 ### Model Performance
 
 We then apply our selected model to the test set. The final metrics are given in @tbl-svm-performance.
 
-```{r svn-performance, cache=TRUE, echo=TRUE}
+```{r svm-performance, echo=TRUE}
 
 # Use the best fit to make predictions on the test data.
 svm_pred <- 
@@ -143,13 +115,13 @@ svm_pred <-
 #| tbl-cap: 'SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
 #| tbl-alt: 'SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
 
-# Prepare table's theme.
-theme <- reactable::reactableTheme(
-  borderColor = "#dfe2e5",
-  stripedColor = "#f6f8fa", 
-  highlightColor = "#f0f5f9",
-  cellPadding = "8px 12px"
-)
+# # Prepare table's theme.
+# theme <- reactable::reactableTheme(
+#   borderColor = "#dfe2e5",
+#   stripedColor = "#f6f8fa", 
+#   highlightColor = "#f0f5f9",
+#   cellPadding = "8px 12px"
+# )
 
 # Create metrics table.
 svm_metrics_table <- list(
@@ -168,17 +140,24 @@ svm_metrics_table <- list(
 
 readr::write_csv(x = svm_metrics_table, file = here::here('data', 'svm-metrics.csv'))
 
-svm_metrics_table |>
-  dplyr::mutate(Value = paste0(Value, '%')) |>
-  reactable::reactable(
-    searchable = FALSE, 
-    resizable = TRUE,
-    onClick = "expand",
-    bordered = TRUE,
-    highlight = TRUE, 
-    compact = TRUE,
-    height = "auto",
-    theme = theme
-  )
+# svm_metrics_table |>
+#   dplyr::mutate(Value = paste0(Value, '%')) |>
+#   reactable::reactable(
+#     searchable = FALSE, 
+#     resizable = TRUE,
+#     onClick = "expand",
+#     bordered = TRUE,
+#     highlight = TRUE, 
+#     compact = TRUE,
+#     height = "auto",
+#     theme = theme
+#   )
+
+gt::gt(svm_metrics_table) |>
+  gt::tab_style(
+    style = list(gt::cell_fill(color = "white")),
+    locations = gt::cells_body(gt::everything())
+  ) |>
+  gt::cols_width(gt::everything() ~ gt::pct(50))
 
 ```

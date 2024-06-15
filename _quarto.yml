@@ -4,8 +4,9 @@ project:
   - "*.qmd"
   - "!TODO.md"
   - "!README.md"
+  - "develop/"
 execute:
-  freeze: auto
+  freeze: auto # Re-render only when source changes
 
 format:
   html:
@@ -17,13 +18,12 @@ format:
       hypothesis: true
   # docx: default
   # jats: default
-  # aft-pdf:
-  #   notebook-links: global
-  #   notebook-view: false
-  #   default:
-  #     keep-tex: true
+  aft-pdf:
+    notebook-links: global
+    notebook-view: false
+    default:
+      keep-tex: true
   pdf:
-    prefer-html: true
     notebook-links: global
     notebook-view: false
     default:

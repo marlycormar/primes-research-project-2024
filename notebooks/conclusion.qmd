@@ -1,6 +1,6 @@
 # Conclusion
 
-This research paper delved into the comparative analysis of six machine learning algorithms—Artificial Neural Networks (ANN), Support Vector Machines (SVM), K-Nearest Neighbors (KNN), Logistic Regression, Random Forests, and XGBoost—for predicting recurrence in Differentiated Thyroid Cancer (DTC) using the dataset available from the UCI Machine Learning Repository. Our study's objective was to ascertain which algorithm demonstrates superior performance in terms of accuracy, precision, recall, and specificity within the clinical context of DTC recurrence prediction.
+This research paper delved into the comparative analysis of six machine learning algorithms—Artificial Neural Network, Support Vector Machine, K-Nearest Neighbors, Logistic Regression, Random Forest, and Extreme Gradient Boosting—for predicting recurrence in Differentiated Thyroid Cancer (DTC) using the dataset available from the UCI Machine Learning Repository. Our study's objective was to ascertain which algorithm demonstrates superior performance in terms of accuracy, precision, recall, and specificity within the clinical context of DTC recurrence prediction.
 
 The findings indicated that KNN outperformed the other models with the highest accuracy, precision, recall, and specificity metrics, suggesting its superior capability in handling the predictive challenges of DTC recurrence. ANN and SVM also showed commendable performance, highlighting their potential in medical prediction tasks, especially in complex and high-dimensional data environments.
 

@@ -2,60 +2,44 @@
 
 ### Model Description
 
-Random forest is an ensemble method based on regression or classification trees. We will focus on classification trees, because the target variable in the Thyroid data set is categorical. These trees divide the predictor space into multiple simple regions, and given an observation, we predict that it falls into the most commonly occurring class of training observations in the region where it belongs. For example, consider a classification tree that splits into two branches based on whether $\text{Age}<35$ and splits into two sub-branches based on whether $\text{Gender=Female}$, in order to predict cancer recurrence. If a new observation has $\text{Age}=50$ and $\text{Gender=Female}$, we would follow the $\text{Age}\ge35$ and $\text{Gender=Female}$ branch to find the prediction. To construct a classification tree, we use recursive binary splits, and each time we choose the split that minimizes the error rate (common measures of error rate are the classification error rate, Gini index, and entropy [@james2021]).
+Random forest is an ensemble learning method that constructs multiple decision trees during training and outputs the mode of the classes (classification) or mean prediction (regression) of the individual trees. This method is particularly effective for classification problems, such as the one we are dealing with in the Thyroid dataset where the target variable is categorical. Each decision tree in a random forest splits the predictor space into distinct regions using recursive binary splits. For instance, a tree might first split based on whether $\text{Age}<35$ and then further split based on whether $\text{Gender}=\text{Female}$ to predict cancer recurrence. These splits are chosen to minimize a specific error criterion, such as the Gini index or entropy [@james2021].
 
-However, classification trees have a limitation: they have high variance—in other words, depending on how the training data is split, the resulting tree can be very different. To improve performance, we apply bagging: choose some large integer $B$ and using $B$ bootstrapped training sets, construct $B$ classification trees and take the majority of the resulting predictions. In this way, variance is reduced, because if the variance of each of $B$ independent observations $Z_1, \dots, Z_B$ is $\sigma^2$, then the variance of the mean of the observations is $\sigma^2/B$.
+A significant limitation of individual decision trees is their high variance; small changes in the training data can lead to very different tree structures. Random forest addresses this by using bagging, where multiple trees are trained on different bootstrap samples of the data. The final prediction is made by aggregating the predictions of all the trees, typically through majority voting in classification problems. This process reduces variance because the average of many uncorrelated trees' predictions is less variable than the prediction of a single tree.
 
-Finally, the random forest method improves on bagging in the following way: when constructing decision trees, we randomly choose $m$ predictors to be split candidates, and the split can only use one of these $m$ predictors. We usually use $m \approx \sqrt{p}$, where $p$ is the number of predictors. It may seem counterintuitive that using fewer predictors in each split is an improvement, but the reasoning is that for bagged trees, since the strongest predictors are used in the top split, the bagged trees are very similar to each other, so their predictions are highly correlated. However, averaging correlated quantities leads to a smaller decrease in variance than averaging uncorrelated quantities. Thus, since the randomization in random forests helps decorrelate the trees, the overall predictions will have less variance.
+Random forest further reduces correlation between trees by selecting a random subset of predictors to consider for each split, rather than considering all predictors. Typically, for classification problems, this subset size is approximately $\sqrt{p}$, where $p$ is the total number of predictors. This random selection of features ensures that the trees are less similar to each other, which reduces the correlation between their predictions and leads to a greater reduction in variance. By combining bagging with feature randomness, random forests create robust models that are less prone to overfitting and provide better generalization to new data.
 
 ### Model Workflow
 
-```{r}
-# Read cleaned data.
-cleaned_data <- readr::read_csv(here::here('data', 'cleaned-data.csv'))
-```
+```{r rf-load-data}
 
-```{r rf-data-split, cache=TRUE}
-
-# Initialize a random number generator.
-set.seed(314)
-
-# Split data into training and test sets.
-data_split <- rsample::initial_split(cleaned_data)
-train_data <- rsample::training(data_split)
-test_data <- rsample::testing(data_split)
-
-# Split the training data into 10 folds for cross-validation.
-data_cross_val <- rsample::vfold_cv(train_data)
-
-# Set aside the outcome column of the sample test data.
-test_outcome <- 
-  factor(test_data$Recurred)
-
-```
-
-```{r rf-data-recipes, cache=TRUE}
 library(tidymodels)
 
-# Create recipe for the data prep.
-data_rec <- recipes::recipe(Recurred ~ ., data = train_data) |>
-  recipes::step_corr(threshold = 0.6) |>
-  recipes::step_normalize(recipes::all_numeric()) |>
-  recipes::step_dummy(recipes::all_nominal_predictors())
+# Load the data already computed in the index.qmd file.
+data_split <- readRDS(here::here('data/data_split.rds'))
+data_cross_val <- readRDS(here::here('data/data_cross_val.rds'))
+test_outcome <- readRDS(here::here('data/test_outcome.rds'))
+data_rec <- readRDS(here::here('data/data_rec.rds'))
+
+# Set random seed.
+set.seed(3145)
 
 ```
 
-```{r rf-workflow, cache=TRUE}
+In this section, we will set up a workflow to train our Random Forest model. The goal is to optimize the following hyperparameters to achieve the best performance on our classification task:
+
+- `trees`: This parameter specifies the total number of trees to be grown in the forest. Tuning the number of trees can help ensure that the model is robust and neither overfitting nor underfitting the data.
+- `min_n`: This parameter sets the minimum number of observations required in a terminal node. Tuning `min_n` helps control the size of the trees, affecting the model's ability to generalize to new data.
+
+```{r rf-workflow, echo=TRUE}
 
 # Create model specification.
 rf_model_spec <- 
-  rand_forest(
-    mtry = tune(),
-    trees = 1000,
-    min_n = tune()
-  ) %>%
-  set_mode("classification") %>%
-  set_engine("ranger")
+  parsnip::rand_forest(
+    trees = 500,
+    min_n = tune::tune()
+  ) |>
+  parsnip::set_engine('ranger') |>
+  parsnip::set_mode('classification')
 
 # Create model workflow.
 rf_workflow <- workflows::workflow() |>
@@ -66,7 +50,7 @@ rf_workflow <- workflows::workflow() |>
 
 ### Model Tuning and Fitting
 
-```{r rf-param-tunning, cache=TRUE, warning=FALSE, echo=TRUE}
+```{r rf-param-tunning, echo=TRUE}
 
 #' Check number of available cores.
 cores_no <- parallel::detectCores() - 1
@@ -74,31 +58,28 @@ cores_no <- parallel::detectCores() - 1
 #' Start timer.
 tictoc::tic()
 
-# Create cores_no clusters.
+# Create and register clusters.
 clusters <- parallel::makeCluster(cores_no)
-
-# Start clusters.
 doParallel::registerDoParallel(clusters)
 
 # Fine-tune the model params.
 rf_res <- tune::tune_grid(
   object = rf_workflow,
-  preprocessor = rf_model_spec,
   resamples = data_cross_val,
   control = tune::control_resamples(save_pred = TRUE)
 )
 
-# Select 'best' fit (in terms of accuracy).
+# Select the best fit based on accuracy.
 rf_best_fit <- 
   rf_res |> 
   tune::select_best(metric = 'accuracy')
 
-# Use the 'best' model params for our final model.
+# Finalize the workflow with the best parameters.
 rf_final_workflow <- 
   rf_workflow |>
   tune::finalize_workflow(rf_best_fit)
 
-# Fit our model using the 'best' params.
+# Fit the final model using the best parameters.
 rf_final_fit <- 
   rf_final_workflow |> 
   tune::last_fit(data_split)
@@ -108,9 +89,6 @@ parallel::stopCluster(clusters)
 
 # Stop timer.
 tictoc::toc()
-
-# Choose the best model params.
-rf_res |> tune::select_best(metric = 'roc_auc')
 
 ```
 
@@ -133,13 +111,13 @@ rf_pred <-
 #| tbl-cap: 'Random Forest Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
 #| tbl-alt: 'Random Forest Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
 
-# Prepare table's theme.
-theme <- reactable::reactableTheme(
-  borderColor = "#dfe2e5",
-  stripedColor = "#f6f8fa", 
-  highlightColor = "#f0f5f9",
-  cellPadding = "8px 12px"
-)
+# # Prepare table's theme.
+# theme <- reactable::reactableTheme(
+#   borderColor = '#dfe2e5',
+#   stripedColor = '#f6f8fa', 
+#   highlightColor = '#f0f5f9',
+#   cellPadding = '8px 12px'
+# )
 
 # Create metrics table.
 rf_metrics_table <- list(
@@ -158,17 +136,24 @@ rf_metrics_table <- list(
 
 readr::write_csv(x = rf_metrics_table, file = here::here('data', 'rf-metrics.csv'))
 
-rf_metrics_table |>
-  dplyr::mutate(Value = paste0(Value, '%')) |>
-  reactable::reactable(
-    searchable = FALSE, 
-    resizable = TRUE,
-    onClick = "expand",
-    bordered = TRUE,
-    highlight = TRUE, 
-    compact = TRUE,
-    height = "auto",
-    theme = theme
-  )
+# rf_metrics_table |>
+#   dplyr::mutate(Value = paste0(Value, '%')) |>
+#   reactable::reactable(
+#     searchable = FALSE, 
+#     resizable = TRUE,
+#     onClick = 'expand',
+#     bordered = TRUE,
+#     highlight = TRUE, 
+#     compact = TRUE,
+#     height = 'auto',
+#     theme = theme
+#   )
+
+gt::gt(rf_metrics_table) |>
+  gt::tab_style(
+    style = list(gt::cell_fill(color = "white")),
+    locations = gt::cells_body(gt::everything())
+  ) |>
+  gt::cols_width(gt::everything() ~ gt::pct(50))
 
 ```

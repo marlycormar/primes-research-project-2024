@@ -1,77 +1,46 @@
 
-## Artificial Neural Networks
+## Artificial Neural Network
 
 ### Model Description
 
-The next model we will apply to our data is the Artificial Neural Networks (ANNs). These are also called by their more simple name, Neural Networks. The purpose of an ANN is to take the input vector of variables $X = (X_1, X_2, \cdots, X_p)$ and build the function $\hat{f}(X)$ (that is non-linear) which estimates the appropriate response $Y$ for this input. In our case, we have inputs $(X_1, X_2, \cdots, X_{16})$ of $16$ parameters, and with these we want to predict whether or not the patient will have recurrent DTF. 
+Artificial Neural Networks (ANNs) are a class of machine learning algorithms inspired by the structure and function of the human brain. They consist of interconnected layers of nodes, or neurons, which process input data to perform tasks such as classification, regression, and pattern recognition. ANNs are particularly effective for complex tasks like image and speech recognition, natural language processing, financial forecasting, and medical diagnosis.
 
-We must start by discussing the mathematical framework of a neural network. The initial inputs make up what is called the *input layer*. After the input layer, we have a certain number of *hidden layers*. Let us assume for now that we only have one hidden layer. Suppose this hidden layer has $K$ *hidden units*. Then the function $\hat{f}(X)$ takes the following form: $$\hat{f}(X)=\beta_0+\sum_{k=1}^K \beta_kh_k(X)=\beta_0+\sum_{k=1}^K \beta_kg(w_{k0}+\sum_{j=1}^p w_{kj}X_j).$$ Let's unpack this. We need to start by specifying an activation function $g$. A common activation function is the *sigmoid function* $g(z)=\frac{e^z}{1+e^z}$. It is important that $g$ is non linear, else $\hat{f}$ is a simple linear function. All the $\beta_i$s and $w_{ij}$s are parameters that we need to learn (estimate) from our training data. The *activations* $$A_k=h_k(X)=g(w_{k0}+\sum_{j=1}^p w_{kj}X_j)$$ are functions of the input $X$ that depend on the learned weights $w$. The idea is that after many epochs, our estimates for the $\beta$ and $w$ parameters are accurate enough that $\hat{f}$ is an accurate predictor of $f$. 
+An ANN is composed of multiple layers, including an input layer, one or more hidden layers, and an output layer. The input layer receives the raw data, the hidden layers process the data through various transformations, and the output layer produces the final prediction or classification. Each connection between neurons has an associated weight, and each neuron has a bias term. These parameters are adjusted during the training process to minimize the error in predictions.
 
-Modern neural networks typically have more than one layer. The framework is quite similar to the single-layered network, just with multiple additional layers containing activations. We have an input layer of $X=(X_1, X_2, \cdots, X_p)$, and we reduce this to a hidden layer $L_1=(A_1^{(1)}, A_2^{(1)},\cdots,A_{K_1}^{(1)})$ as was done in the single-layer network. In a similar manner, we reduce this hidden layer to another hidden layer $L_2=(A_1^{(2)}, A_2^{(2)}, \cdots, A_{K_2}^{(2)})$. We continue this reduction process until we reach the final hidden layer. The reduction formula from one hidden layer to the next is of the form $$A_{\ell}^{(2)}=h_{\ell}^{(2)}(X)=g(w_{\ell0}^{(2)}+\sum_{k=1}^K w_{\ell k}^{(2)}A_k^{(1)}).$$ We can represent these weight coefficients with a *matrix of weights*. In particular, for each $r$, we set $\mathbf{W}_r$ to the matrix such that $(\mathbf{W}_r)_{ij}=w_{ij}^{(r)}$. This way of representing the parameters turns out to be quite useful during learning. To extract the output layer from the final hidden layer, we apply the same process previously described for a single layer NN. 
+The training process of an ANN involves forward propagation, where input data is passed through the network layer by layer. Each neuron applies an activation function to compute its output, introducing non-linearity to help the network learn complex patterns. The loss, or error, between the network's output and the true target values is calculated using a loss function. Through backpropagation, the loss is propagated backward through the network, and the weights and biases are adjusted using an optimization algorithm like gradient descent.
 
-<!-- It may also be the case that the output $Y$ is some element of the set $\{0,1,\cdots, m\}$. Here, we need to get from the last hidden layer to some final set of output functions $(\hat{f}_0(X), \hat{f}_1(X), \dots, \hat{f}_m(X))$, where we set $\hat{f}_{\alpha}(X)=\mathbb{P}(Y=\alpha|X)$. Suppose we have $s$ hidden layers. For $t=0, 1, \cdots, m$, we compute a linear model $$Z_t=\beta_{t0}+\sum_{\ell=1}^{K_s}\beta_{m\ell}h_{\ell}^{(s)}(X).$$ Just like with the weights $w$, we can store the $\beta$ coefficients in a matrix $\mathbf{B}$. We can now extract the function outputs using another activation function, the *softmax function*: $$\hat{f}_{\alpha}(X)=\mathbb{P}(Y=\alpha|X)=\frac{e^{Z_{\alpha}}}{\sum_{t=0}^{m}e^{Z_t}}.$$ In summary, we started with a set of inputs $X$ and produced a set of outputs, which correspond to probabilities that an input $X$ produces an output $Y$. The key is that in training, we learn weights that fit the functions $\hat{f}_{\alpha}(X)$ more precisely to the true nature of the system. This allows even data outside our training set to be fit well by the functions -- the entire purpose of machine learning. In order to fit the function well, during training we try to minimize the negative multinomial log-likelihood, or *cross-entropy* of $n$ input/output pairs $(x_i, y_i)$, $$-\sum_{i=1}^n \sum_{\alpha=0}^m y_{im}\log(\hat{f}_{\alpha}(x_i)).$$ -->
-
-<!-- Convolutional Neural Networks, or CNNs, are types of neural networks that have evolved to be quite useful in image recognition and various other machine learning tasks. The point is that they recognize patterns in specific parts of the data, similar to how a human would. It does this by combining two types of hidden layers: *convolution* and *pooling* layers. Convolution layers find small patterns in data, and pooling layers select a prominent subset of these patterns. A convolution layer is built out of many convolution filters, which are templates that determine if some feature appears in data. These filters can be interpreted as matrices, and the layer can thus be interpreted as the convolution of these matrices -- i.e. their product. A pooling layer condenses a large data set into a smaller summary data set. This is often done by splitting the data set into chunks and taking only the maximum value of each chunk. -->
-
-<!-- Recurrent Neural Networks, or RNNs, are neural networks that deal with data that is sequential in nature. For example, time series of temperature, rainfall, wind speed, air quality, etc. We may want to forecast the weather several days ahead, or climate several decades ahead. The task at hand is not exactly like this, but RNNs still may be helpful. As before, we take a sequence of inputs $X=\{X_1, X_2, \cdots, X_L\}$, and we wish to estimate a single output $Y$. We have a hidden layer sequence $\{A_1, A_2, \cdots, A_L\}$ and an output layer sequence $\{O_1, O_2, \cdots, O_L\}$. The sequence $X$ is processed one vector at a time. When $X_{\ell}$ is processed, the activation $A_{\ell}$ is updated using $X_{\ell}$ and $A_{\ell-1}$. Each $A_{\ell}$ produces an output $O_{\ell}$, a prediction for $Y$. We only really care about the last of these outputs, $O_L$, as this is the most refined. Let's look at the details. Suppose each input vector has $p$ components, $(X_{\ell 1}, X_{\ell 2}, \cdots, X_{\ell p})$. Suppose the hidden layer $A_{\ell}$ contains $K$ units $(A_{\ell 1}, A_{\ell 2}, \cdots, A_{\ell K})$. We need a $K\times (p+1)$ matrix $\mathbf{W}$ of weights $w_{kj}$ from $X$ to $A$, a $K\times K$ matrix $\mathbf{U}$ of weights $u_{ks}$ from $A_{\ell-1}$ to $A_{\ell}$, and a $(K+1)$-vector of weights $\beta_k$ for the output layer. We compute each $A$ component using an activation function $g$ in the following manner: $$A_{\ell k}=g\left(w_{k0}+\sum_{j=1}^p w_{kj}X_{\ell j}+\sum_{s=1}^K u_{ks}A_{\ell-1, s}\right).$$ We compute each output in the following manner: $$O_{\ell}=\beta_0+\sum_{k=1}^K \beta_kA_{\ell k}.$$ This gives us a quantitative output. If we would like a binary output, we can add an additional sigmoid activation function. Note that the parameters we are learning are $\mathbf{W}, \mathbf{U}, \mathbf{B}$. Notice that these parameters are shared for all $\ell$. The loss function is the square of the difference between the real output and the expected output: $(Y-O_L)^2$, which only depends upon the final output. Thus we can effectively ignore $O_1, O_2, \cdots, O_{L-1}$. With $n$ input/output pairs $(x_i, y_i)$, the goal of training is to minimize the sum of squares 
-$$\sum_{i=1}^n (y_i-o_{iL})^2$$
-$$= \sum_{i=1}^n\left(y_i-(\beta_0+\sum_{k=1}^K \beta_k g(w_{k0}+\sum_{j=1}^p w_{kj}x_{iLj}+\sum_{s=1}^K u_{ks}a_{i, L-1, s}))\right),$$ 
-where we use the notation $x_i=\{x_{i1}, x_{i2}, \cdots, x_{iL}\}$, and similarly for activations. -->
-
-<!-- Now that we've talked about the framework for neural networks, let us shift gears and talk about model fitting. As mentioned earlier, we need to solve a problem of the form $$\min_{\mathbf{W}, \mathbf{B}}\sum_{i=1}^n(y_i-\hat{f}(x_i))^2,$$ where $\hat{f}$ is our complicated function defined earlier. This function is non-convex and hence there are multiple solutions. There are two ways this is usually done: Slow Learning (gradient descent) and Regularization. We may represent all parameters in one long vector $\theta$. We hence want to solve $$\min_{\theta}\sum_{i=1}^n(y_i-\hat{f}_{\theta}(x_i))^2=\min_{\theta}R(\theta).$$ The idea of gradient descent is very simple: at a local minimum, the derivative (gradient) of the function is zero. We hence continually massage $\theta$ in the direction that makes the gradient smaller. Continue this iteration until the algorithm does not yield an improvement, and we've found a local minimum. Let $\theta^m$ be the $m$th iteration of $\theta$. The gradient $\nabla R(\theta^m)$ is $\frac{\partial R(\theta)}{\partial \theta}$ evaluated at $\theta=\theta^m$. This gives us the direction in which $R(\theta)$ increases most rapidly. We then wish to move $\theta$ a little bit in the opposite direction, i.e., $\theta^{m+1}=\theta^m-\rho \nabla R(\theta^m)$ where $\rho$ is called the *learning rate*. We have that the guess $\theta^{m+1}$ is at least as good as the guess $\theta^m$ because $R(\theta^{m+1})\le R(\theta^m)$. Regularization is similar, it just adds an extra penalty term $\lambda \sum_j \theta_i^2$ to $R(\theta)$ and performs the same process. -->
+ANNs offer significant advantages, including flexibility in modeling complex relationships and scalability to handle large datasets and intricate tasks. Their ability to learn and generalize from data makes them powerful tools in various applications, driving advancements in fields ranging from technology and finance to healthcare and beyond.
 
 ### Model Workflow
 
-```{r}
+```{r ann-load-data}
 
-# Read cleaned data.
-cleaned_data <- readr::read_csv(here::here('data', 'cleaned-data.csv'))
+library(tidymodels)
 
-```
+# Load the data already computed in the index.qmd file.
+data_split <- readRDS(here::here('data/data_split.rds'))
+data_cross_val <- readRDS(here::here('data/data_cross_val.rds'))
+test_outcome <- readRDS(here::here('data/test_outcome.rds'))
+data_rec <- readRDS(here::here('data/data_rec.rds'))
 
-```{r ann-data-split, cache=TRUE}
-
-set.seed(314)
-
-# Split data into training, validation, and test sets.
-data_split <- rsample::initial_validation_split(cleaned_data)
-train_data <- rsample::training(data_split)
-validation_data <- rsample::validation(data_split)
-test_data <- rsample::testing(data_split)
-
-# Create cross-validation collection.
-data_cross_val <- rsample::vfold_cv(train_data)
-
-# Save the test data `Recurred`.
-test_outcome <- 
-  factor(test_data$Recurred)
+# Set random seed.
+set.seed(3145)
 
 ```
 
+Let us start by specifying the ANN model and creating the model workflow. Specifically, we will define a multilayer perceptron model (i.e., a single-layer, feed-forward neural network). The key parameters we will set include the number of epochs (or training iterations), the number of hidden units, the penalty (or weight decay), and the learning rate.
 
-```{r ann-data-recipes, cache=TRUE}
-
-# Create recipe for the data prep.
-data_rec <- recipes::recipe(Recurred ~ ., data = train_data) |>
-  recipes::step_corr(threshold = 0.6) |>
-  recipes::step_normalize(recipes::all_numeric()) |>
-  recipes::step_dummy(recipes::all_nominal_predictors())
-
-```
-
-We are ready to specify the ANN model and create the model workflow. Specifically, we will define a multilayer perceptron model (i.e., a single layer, feed-forward neural network). The parameters of interest would be the number of epochs (or training iterations), the number of hidden units (`hidden_units`), the penalty (or weight decay), and the learning rate.
-
-```{r ann-workflow, cache=TRUE}
+```{r ann-workflow, echo=TRUE, cache=TRUE}
 
 # Create model specification.
 ann_model_spec <-
   parsnip::mlp(
-    epochs = 1000,
-    hidden_units = 10,
-    penalty = 0.01, 
+    epochs = tune::tune(),
+    hidden_units = tune::tune(),
+    penalty = tune::tune(),
     learn_rate = 0.1
   ) |>
-  parsnip::set_engine('brulee') |>
+  parsnip::set_engine('nnet') |>
   parsnip::set_mode('classification')
 
 # Create model workflow.
@@ -84,11 +53,9 @@ ann_workflow <- workflows::workflow() |>
 
 ### Model Tuning and Fitting
 
-Tuning the parameters of our ANN proved to be resource exhausting. As a result, the model parameters were not tuned but rather common ranges were used. Fortunately, this simple NN performed well in terms of accuracy, precision, recall and specificity (more than $80\%$ overall).
+We will proceed to tune all the parameters except for the learning rate. This is because the `nnet` package does not support tuning the learning rate.
 
-The code below follows the same structure as for KNN and SVM. Note, however, that this is not needed as the model is not fine-tuned. We decided to use the same code structure for consistency.
-
-```{r ann-param-tunning, cache=TRUE, echo=TRUE}
+```{r ann-param-tunning, echo=TRUE, cache=TRUE}
 
 #' Check number of available cores.
 cores_no <- parallel::detectCores() - 1
@@ -96,31 +63,28 @@ cores_no <- parallel::detectCores() - 1
 #' Start timer.
 tictoc::tic()
 
-# Create cores_no clusters.
+# Create and register clusters.
 clusters <- parallel::makeCluster(cores_no)
-
-# Start clusters.
 doParallel::registerDoParallel(clusters)
 
 # Fine-tune the model params.
 ann_res <- tune::tune_grid(
   object = ann_workflow,
-  preprocessor = ann_model_spec,
   resamples = data_cross_val,
   control = tune::control_resamples(save_pred = TRUE)
 )
 
-# Select 'best' fit (in terms of accuracy).
+# Select the best fit based on accuracy.
 ann_best_fit <- 
   ann_res |> 
   tune::select_best(metric = 'accuracy')
 
-# Use the 'best' model params for our final model.
+# Finalize the workflow with the best parameters.
 ann_final_workflow <- 
   ann_workflow |>
   tune::finalize_workflow(ann_best_fit)
 
-# Fit our model using the 'best' params.
+# Fit the final model using the best parameters.
 ann_final_fit <- 
   ann_final_workflow |> 
   tune::last_fit(data_split)
@@ -131,16 +95,13 @@ parallel::stopCluster(clusters)
 # Stop timer.
 tictoc::toc()
 
-# Choose the best model params.
-ann_res |> tune::select_best(metric = 'roc_auc')
-
 ```
 
 ### Model Performance
 
 We then apply our selected model to the test set. The final metrics are given in @tbl-ann-performance.
 
-```{r, echo=TRUE}
+```{r ann-pred, echo=TRUE}
 
 # Use the best fit to make predictions on the test data.
 ann_pred <- 
@@ -151,18 +112,18 @@ ann_pred <-
 ```
 
 
-```{r ann-performance, cache=TRUE}
+```{r ann-performance}
 #| label: tbl-ann-performance
 #| tbl-cap: "ANN Performance Metrics: Accuracy, Precision, Recall, and Specificity."
 #| tbl-alt: "ANN Performance Metrics: Accuracy, Precision, Recall, and Specificity."
 
-# Prepare table's theme.
-theme <- reactable::reactableTheme(
-  borderColor = "#dfe2e5",
-  stripedColor = "#f6f8fa", 
-  highlightColor = "#f0f5f9",
-  cellPadding = "8px 12px"
-)
+# # Prepare table's theme.
+# theme <- reactable::reactableTheme(
+#   borderColor = "#dfe2e5",
+#   stripedColor = "#f6f8fa", 
+#   highlightColor = "#f0f5f9",
+#   cellPadding = "8px 12px"
+# )
 
 # Create metrics table.
 ann_metrics_table <- list(
@@ -181,18 +142,25 @@ ann_metrics_table <- list(
 
 readr::write_csv(x = ann_metrics_table, file = here::here('data', 'ann-metrics.csv'))
 
-ann_metrics_table |>
-  dplyr::mutate(Value = paste0(Value, '%')) |>
-  reactable::reactable(
-    searchable = FALSE, 
-    resizable = TRUE,
-    onClick = "expand",
-    bordered = TRUE,
-    highlight = TRUE, 
-    compact = TRUE,
-    height = "auto",
-    theme = theme
-  )
+# ann_metrics_table |>
+#   dplyr::mutate(Value = paste0(Value, '%')) |>
+#   reactable::reactable(
+#     searchable = FALSE, 
+#     resizable = TRUE,
+#     onClick = "expand",
+#     bordered = TRUE,
+#     highlight = TRUE, 
+#     compact = TRUE,
+#     height = "auto",
+#     theme = theme
+#   )
+
+gt::gt(ann_metrics_table) |>
+  gt::tab_style(
+    style = list(gt::cell_fill(color = "white")),
+    locations = gt::cells_body(gt::everything())
+  ) |>
+  gt::cols_width(gt::everything() ~ gt::pct(50))
 
 ```
 

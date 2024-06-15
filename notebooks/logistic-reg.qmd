@@ -1,73 +1,55 @@
 ## Logistic Regression
 
 ### Model Description
-Logistic regression for binary classification is a supervised algorithm which predicts the probability a data point $X$ belongs to each category. This model is essentially a modification of the linear regression model to instead output probabilities by applying the softmax function. Let "$1$" represent the "positive" class and "$0$" represent the "negative" class. The probability of $X$ belonging to the category "$1$" is given as
-$$p(X) = p(Y = 1 \mid X) = \text{Softmax}(\beta_0 + \beta_1X_1 + \dots + \beta_pX_p) = \frac{e^{\beta_0 + \beta_1 X_1 + \dots + \beta_p X_p}}{1 + e^{\beta_0 + \beta_1X_1 + \dots + \beta_p X_p}},$$
-where $\beta_0, \beta_1, \dots, \beta_p$ are parameters to be estimated. 
-We classify $X$ as "positive" if $p(X) > 0.5$.
 
-By construction, we have
-$$\frac{p(X)}{1 - p(X)} = e^{\beta_0 + \beta_1X_1 + \dots \beta_pX_p},$$
-and this quantity is called the "odds" -- as it denotes the estimated probability of recurrence over no recurrence. It follows that the quantity
-$$\log\left(\frac{p(X)}{1 - p(X)}\right) = \beta_0 + \beta_1X_1 + \dots \beta_pX_p$$
-called the "log odds" is linear.
+Logistic Regression (LR) is a supervised learning algorithm widely used for classification problems. It is particularly effective for binary classification tasks, where the outcome variable can take one of two possible values. The model predicts the probability that a given input belongs to a specific class by applying the logistic (sigmoid) function, which transforms a linear combination of input features into a probability value between $0$ and $1$.
 
+For binary classification, the logistic function is defined as $\sigma(\hat{Y}_i) = 1/(1 + e^{-\hat{Y}_i})$ where $\hat{Y}$ is a linear combination of the input features. The probability of the outcome $i$ being the positive class (represented as 1) is given by:
 
-We find the optimal parameters using the maximum likelihood function
-$$L(\beta_0, \dots, \beta_p) = \prod_{i: y_i = 1}p(x_i) \prod_{j: y_j = 0}(1 - p(x_j)).$$
-(Note that this maximizes the probability of the observed training data.) Or equivalently, we want to maximize the *log likelihood function*
-$$LLF = \sum_{i = 1}^n \left[y_i\log(p(x_i)) + (1 - y_i)\log(1 - p(x_i))\right].$$
+$$\sigma(\hat{Y}_i) = \sigma(\beta_0 + \beta_1 X_{1, i} + \beta_2 X_{2, i} + \ldots + \beta_p X_{p, i}),$$
 
+where $\beta_0$ is the intercept, and $\beta_1, \beta_2, \ldots, \beta_p$ are the coefficients corresponding to the input features $X_1, X_2, \ldots, X_p$. These coefficients are estimated using the method of maximum likelihood estimation (MLE), which maximizes the likelihood of the observed data.
 
+LR can also be extended to handle multi-class classification problems through multinomial logistic regression. In this case, the model uses the softmax function to generalize to multiple classes. The softmax function is an extension of the logistic function for multiple classes and is defined as:
+
+$$Pr(Y = j | X = x_0) = \frac{e^{\mathbf{\beta}_j x_0}}{\sum_{i=1}^{n} e^{\mathbf{\beta}_i \cdot x_0}}$$
+
+where $x_0$ is an observation, $n$ is the number of classes, and $\mathbf{\beta}_j$ is the coefficient vector for class $j$.
+
+The primary advantage of LR is its interpretability. Each coefficient indicates the change in the log-odds of the outcome for a one-unit change in the corresponding predictor variable. This provides clear insights into the influence of each predictor on the probability of the outcome. Despite its simplicity, LR is a powerful tool for both binary and multi-class classification, making it suitable for a wide range of applications where the relationship between the predictors and the log-odds is approximately linear.
 
 
 ### Model Workflow
 
-```{r}
-# Read cleaned data.
-cleaned_data <- readr::read_csv(here::here('data', 'cleaned-data.csv'))
-```
+```{r lr-load-data}
 
+# Load the data already computed in the index.qmd file.
+data_split <- readRDS(here::here('data/data_split.rds'))
+data_cross_val <- readRDS(here::here('data/data_cross_val.rds'))
+test_outcome <- readRDS(here::here('data/test_outcome.rds'))
+data_rec <- readRDS(here::here('data/data_rec.rds'))
 
-```{r lr-data-split, cache=TRUE}
-
-# Initialize a random number generator.
-set.seed(314)
-
-# Split data into training and test sets.
-data_split <- rsample::initial_split(cleaned_data)
-train_data <- rsample::training(data_split)
-test_data <- rsample::testing(data_split)
-
-# Split the training data into 10 folds for cross-validation.
-data_cross_val <- rsample::vfold_cv(train_data)
-
-# Set aside the outcome column of the sample test data.
-test_outcome <- 
-  factor(test_data$Recurred)
+# Set random seed.
+set.seed(3145)
 
 ```
 
-
-```{r lr-data-recipes, cache=TRUE}
-library(tidymodels)
-
-# Create recipe for the data prep.
-data_rec <- recipes::recipe(Recurred ~ ., data = train_data) |>
-  recipes::step_corr(threshold = 0.6) |>
-  recipes::step_normalize(recipes::all_numeric()) |>
-  recipes::step_dummy(recipes::all_nominal_predictors())
-
-```
+In this section, we will train our LR model and find the
+optimal values for the model parameters. The key parameter we will optimize is
+the penalty parameter, which refers to the regularization term added to the loss
+function to prevent overfitting. We will find the optimal penalty value to
+improve model performance. Additionally, we will set mixture = 1 to apply
+Lasso regularization, which helps in potentially removing irrelevant predictors
+and choosing a simpler model.
 
 
-
-```{r lr-workflow, cache=TRUE}
+```{r lr-workflow, cache=TRUE, echo=TRUE}
 
 # Create model specification.
-# Setting mixture = 1 means that the glmnet model will potentially remove irrelevant predictors and choose a simpler model.
 lr_model_spec <-
-  parsnip::logistic_reg(penalty = tune(), mixture = 1) |>
+  parsnip::logistic_reg(
+    penalty = tune(),
+    mixture = 1) |>
   parsnip::set_mode('classification') |>
   parsnip::set_engine('glmnet')
 
@@ -89,31 +71,28 @@ cores_no <- parallel::detectCores() - 1
 #' Start timer.
 tictoc::tic()
 
-# Create cores_no clusters.
+# Create and register clusters.
 clusters <- parallel::makeCluster(cores_no)
-
-# Start clusters.
 doParallel::registerDoParallel(clusters)
 
 # Fine-tune the model params.
 lr_res <- tune::tune_grid(
   object = lr_workflow,
-  preprocessor = lr_model_spec,
   resamples = data_cross_val,
   control = tune::control_resamples(save_pred = TRUE)
 )
 
-# Select 'best' fit (in terms of accuracy).
+# Select the best fit based on accuracy.
 lr_best_fit <- 
   lr_res |> 
   tune::select_best(metric = 'accuracy')
 
-# Use the 'best' model params for our final model.
+# Finalize the workflow with the best parameters.
 lr_final_workflow <- 
   lr_workflow |>
   tune::finalize_workflow(lr_best_fit)
 
-# Fit our model using the 'best' params.
+# Fit the final model using the best parameters.
 lr_final_fit <- 
   lr_final_workflow |> 
   tune::last_fit(data_split)
@@ -124,14 +103,12 @@ parallel::stopCluster(clusters)
 # Stop timer.
 tictoc::toc()
 
-# Choose the best model params.
-lr_res |> tune::select_best(metric = 'roc_auc')
-
 ```
 
 ### Model Performance
 
-We then apply our selected model to the test set. The final metrics are given in @tbl-lr-performance.
+We then apply our selected model to the test set. The final metrics are given in 
+@tbl-lr-performance.
 
 ```{r, cache=TRUE, echo=TRUE}
 
@@ -149,13 +126,13 @@ lr_pred <-
 #| tbl-cap: 'Logistic Regression Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
 #| tbl-alt: 'Logistic Regression Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
 
-# Prepare table's theme.
-theme <- reactable::reactableTheme(
-  borderColor = "#dfe2e5",
-  stripedColor = "#f6f8fa", 
-  highlightColor = "#f0f5f9",
-  cellPadding = "8px 12px"
-)
+# # Prepare table's theme.
+# theme <- reactable::reactableTheme(
+#   borderColor = "#dfe2e5",
+#   stripedColor = "#f6f8fa", 
+#   highlightColor = "#f0f5f9",
+#   cellPadding = "8px 12px"
+# )
 
 # Create metrics table.
 lr_metrics_table <- list(
@@ -174,17 +151,24 @@ lr_metrics_table <- list(
 
 readr::write_csv(x = lr_metrics_table, file = here::here('data', 'lr-metrics.csv'))
 
-lr_metrics_table |>
-  dplyr::mutate(Value = paste0(Value, '%')) |>
-  reactable::reactable(
-    searchable = FALSE, 
-    resizable = TRUE,
-    onClick = "expand",
-    bordered = TRUE,
-    highlight = TRUE, 
-    compact = TRUE,
-    height = "auto",
-    theme = theme
-  )
+# lr_metrics_table |>
+#   dplyr::mutate(Value = paste0(Value, '%')) |>
+#   reactable::reactable(
+#     searchable = FALSE, 
+#     resizable = TRUE,
+#     onClick = "expand",
+#     bordered = TRUE,
+#     highlight = TRUE, 
+#     compact = TRUE,
+#     height = "auto",
+#     theme = theme
+#   )
+
+gt::gt(lr_metrics_table) |>
+  gt::tab_style(
+    style = list(gt::cell_fill(color = "white")),
+    locations = gt::cells_body(gt::everything())
+  ) |>
+  gt::cols_width(gt::everything() ~ gt::pct(50))
 
 ```
