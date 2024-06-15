@@ -158,7 +158,7 @@ models_performance <-
       dplyr::mutate('Model' = 'ANN', .before = 1),
     readr::read_csv('data/lr-metrics.csv') |>
       dplyr::mutate('Model' = 'Logistic Regression', .before = 1),
-    readr::read_csv('data/gbm-metrics.csv') |>
+    readr::read_csv('data/xgboost-metrics.csv') |>
       dplyr::mutate('Model' = 'XGBoost', .before = 1),
     readr::read_csv('data/rf-metrics.csv') |>
       dplyr::mutate('Model' = 'Random Forest', .before = 1)
