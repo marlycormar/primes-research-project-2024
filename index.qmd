@@ -204,7 +204,7 @@ gt::gt(models_performance) |>
 ```
 
 
-The best performing model in terms of all metrics was ???, with a `r acc_best$Value`% accuracy, `r prec_best$Value`% precision, `r rec_best$Value`% recall, and `r spe_best$Value`% specificity.
+We evaluated the performance of our models on the Thyroid dataset the metrics above [@tbl-overall-performance]. The Random Forest model emerged as the top performer in terms of overall accuracy and specificity, achieving a 94% accuracy rate and a 94% specificity rate, indicating its robustness in correctly identifying negative cases. The precision metric was equally high (85%) across the Artificial Neural Network (ANN), Logistic Regression, and Random Forest models, reflecting their ability to correctly classify positive cases. The Support Vector Machine (SVM) model stood out in terms of recall, achieving a perfect score of 100%, suggesting its effectiveness in capturing all positive cases. These results highlight the Random Forest model as the most balanced and reliable for this classification task, combining high accuracy and specificity with competitive precision, while the SVM model excels in recall, making it particularly suitable for ensuring that all positive cases are identified.
 
 <!-- ```{r model-metrics} -->
 <!-- #| label: tbl-overall-performance -->
