@@ -1,5 +1,5 @@
 ---
-title: 'Enhancing Differentiated Thyroid Cancer Recurrence Prediction through Machine Learning: A Comparative Analysis of ANN, KNN, SVM, Logistic Regression, and Two Ensemble Methods'
+title: 'Comparative Analysis of Machine Learning Models for Thyroid Cancer Recurrence Prediction'
 author:
   - name: Anay Aggarwal
     affiliations: MIT PRIMES
