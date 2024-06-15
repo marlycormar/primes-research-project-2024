@@ -113,7 +113,7 @@ saveRDS(data_rec, 'data/data_rec.rds')
 {{< include notebooks/svm.qmd >}}
 {{< include notebooks/ann.qmd >}}
 {{< include notebooks/logistic-reg.qmd >}}
-{{< include notebooks/gbm.qmd >}}
+{{< include notebooks/xgboost.qmd >}}
 {{< include notebooks/random-forest.qmd >}}
 
 # Model Comparison
