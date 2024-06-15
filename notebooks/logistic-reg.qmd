@@ -2,8 +2,6 @@
 
 ### Model Description
 
-### Logistic Regression
-
 Logistic Regression (LR) is a supervised learning algorithm widely used for classification problems. It is particularly effective for binary classification tasks, where the outcome variable can take one of two possible values. The model predicts the probability that a given input belongs to a specific class by applying the logistic (sigmoid) function, which transforms a linear combination of input features into a probability value between $0$ and $1$.
 
 For binary classification, the logistic function is defined as $\sigma(\hat{Y}_i) = 1/(1 + e^{-\hat{Y}_i})$ where $\hat{Y}$ is a linear combination of the input features. The probability of the outcome $i$ being the positive class (represented as 1) is given by:
