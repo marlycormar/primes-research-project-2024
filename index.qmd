@@ -20,7 +20,7 @@ keywords:
   - XGBoost
   - Random Forest
 abstract: |
-  This study assesses the efficacy of machine learning algorithms—Artificial Neural Network, K-Nearest Neighbors, Support Vector Machine, Logistic Regression, Extreme Gradient Boosting, and Random Forest—in predicting recurrence in Differentiated Thyroid Cancer (DTC). Using a comprehensive dataset from the UCI Machine Learning Repository, we conduct a comparative analysis of these algorithms based on key performance metrics. Our investigation seeks to identify the optimal model for enhancing DTC recurrence predictions, aiming to advance personalized treatment strategies and improve clinical outcomes in thyroid cancer care.
+  This study assesses the efficacy of machine learning algorithms—Artificial Neural Network, K-Nearest Neighbors, Support Vector Machine, Logistic Regression, Extreme Gradient Boosting, and Random Forest—in predicting recurrence in Differentiated Thyroid Cancer (DTC). Using a comprehensive dataset from the UCI Machine Learning Repository, we conduct a comparative analysis of these algorithms based on key performance metrics. Our investigation seeks to identify the best model for enhancing DTC recurrence predictions, aiming to advance personalized treatment strategies and improve clinical outcomes in thyroid cancer care.
 date: last-modified
 bibliography: references.bib
 citation:
