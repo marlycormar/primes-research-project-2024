@@ -5,13 +5,7 @@
 _freeze/
 index_cache/
 index_files/
-notebooks/ann_cache/
-notebooks/eda_cache/
-notebooks/knn_cache/
-notebooks/svm_cache/
-notebooks/gbm_cache/
-notebooks/logistic-reg_cache/
-notebooks/random-forest_cache/
+notebooks/*_cache/
 notebooks/*.ipynb
 
 /.quarto/
