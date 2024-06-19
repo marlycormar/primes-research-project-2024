@@ -14,4 +14,4 @@ $$Pr(Y = j | X = x_0) = \max_{i} Pr(Y = i | X = x_0)$$
 The Bayes classifier produces the lowest possible test error rate called the Bayes error rate. In other words, the Bayes classifier minimizes the test error defined by
 $$\frac{1}{2} \sum_{i = 1}^{n} I(y_i \neq \hat{y}_i),$$
 
-where $I(y_i \neq \hat{y}_i)$ is an indicator variable that equals $1$ if $y_i \neq \hat{y}_i$ and zero if $y_i = \hat{y}_i$ (i.e., the $i$th observation was classified correctly). The Bayes decision boundary is determines by those observations which conditional probability is exactly $0.5$.
+where $I(y_i \neq \hat{y}_i)$ is an indicator variable that equals $1$ if $y_i \neq \hat{y}_i$ and zero if $y_i = \hat{y}_i$ (i.e., the $i$th observation was classified correctly). The Bayes decision boundary is determined by those observations which conditional probability is exactly $0.5$.

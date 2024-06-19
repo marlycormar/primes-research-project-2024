@@ -20,7 +20,7 @@ keywords:
   - XGBoost
   - Random Forest
 abstract: |
-  This study assesses the efficacy of machine learning algorithms—Artificial Neural Network, K-Nearest Neighbors, Support Vector Machine, Logistic Regression, Extreme Gradient Boosting, and Random Forest—in predicting recurrence in Differentiated Thyroid Cancer (DTC). Using a comprehensive dataset from the UCI Machine Learning Repository, we conduct a comparative analysis of these algorithms based on key performance metrics. Our investigation seeks to identify the best model for enhancing DTC recurrence predictions, aiming to advance personalized treatment strategies and improve clinical outcomes in thyroid cancer care.
+  This study assesses the efficacy of machine learning algorithms—Artificial Neural Network, K-Nearest Neighbors, Support Vector Machine, Logistic Regression, Extreme Gradient Boosting, and Random Forest—in predicting recurrence in Differentiated Thyroid Cancer (DTC). Using a comprehensive dataset from the UCI Machine Learning Repository, we conduct a comparative analysis of these algorithms based on key performance metrics. Our investigation seeks to identify the best model for predicting DTC recurrence, aiming to advance personalized treatment strategies and improve clinical outcomes in thyroid cancer care.
 date: last-modified
 bibliography: references.bib
 citation:
@@ -128,7 +128,7 @@ To assess model performance, we will compare the accuracy, precision, recall, an
 
 - Specificity: proportion of correctly classified negative observations among all actual negative observations or $\frac{TN}{TN + FP}$.
 
-```{r message=FALSE}
+```{r}
 #| label: tbl-overall-performance
 #| tbl-cap: 'Performance Comparison: Accuracy, Precision, Recall, and Specificity.'
 #| tbl-alt: 'Performance Comparison: Accuracy, Precision, Recall, and Specificity.'
@@ -168,7 +168,6 @@ models_performance <-
   dplyr::select(Metric, Model, Value) |>
   dplyr::arrange(Metric) |>
   dplyr::mutate(Value = paste0(round(Value), '%'))
-models_performance
 
 gt::gt(models_performance) |>
   gt::tab_style(
@@ -203,8 +202,9 @@ gt::gt(models_performance) |>
 
 ```
 
+We evaluated the performance of our models on the Thyroid dataset using the metrics shown in [@tbl-overall-performance]. 
 
-We evaluated the performance of our models on the Thyroid dataset the metrics above [@tbl-overall-performance]. The Random Forest model emerged as the top performer in terms of overall accuracy and specificity, achieving a 94% accuracy rate and a 94% specificity rate, indicating its robustness in correctly identifying negative cases. The precision metric was equally high (85%) across the Artificial Neural Network (ANN), Logistic Regression, and Random Forest models, reflecting their ability to correctly classify positive cases. The Support Vector Machine (SVM) model stood out in terms of recall, achieving a perfect score of 100%, suggesting its effectiveness in capturing all positive cases. These results highlight the Random Forest model as the most balanced and reliable for this classification task, combining high accuracy and specificity with competitive precision, while the SVM model excels in recall, making it particularly suitable for ensuring that all positive cases are identified.
+The Random Forest model emerged as the top performer in terms of overall accuracy and specificity, achieving a 94% accuracy rate and a 94% specificity rate, indicating its robustness in correctly identifying negative cases. The precision metric was equally high (85%) across the Artificial Neural Network (ANN), Logistic Regression, and Random Forest models, reflecting their ability to correctly classify positive cases. The Support Vector Machine (SVM) model stood out in terms of recall, achieving a perfect score of 100%, suggesting its effectiveness in capturing all positive cases. These results highlight the Random Forest model as the most balanced and reliable for this classification task, combining high accuracy and specificity with competitive precision, while the SVM model excels in recall, making it particularly suitable for ensuring that all positive cases are identified.
 
 <!-- ```{r model-metrics} -->
 <!-- #| label: tbl-overall-performance -->
@@ -288,7 +288,7 @@ The data is available at the UC Irvine Machine Learning Repository @ucidata. For
 <!----------------------------------------------------------------------------->
 <!----------------------- ## ACKNOWLEDGMENTS ---------------------------------->
 <!----------------------------------------------------------------------------->
-# Ackcnowledgments
+# Acknowledgments
 
 We thank our PRIMES mentor, Dr. Marly Gotti, for her guidance throughout the reading and research periods. We are also grateful to the PRIMES organizers for making this program possible.
 

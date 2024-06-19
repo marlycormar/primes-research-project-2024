@@ -10,7 +10,7 @@ $$\sigma(\hat{Y}_i) = \sigma(\beta_0 + \beta_1 X_{1, i} + \beta_2 X_{2, i} + \ld
 
 where $\beta_0$ is the intercept, and $\beta_1, \beta_2, \ldots, \beta_p$ are the coefficients corresponding to the input features $X_1, X_2, \ldots, X_p$. These coefficients are estimated using the method of maximum likelihood estimation (MLE), which maximizes the likelihood of the observed data.
 
-LR can also be extended to handle multi-class classification problems through multinomial logistic regression. In this case, the model uses the softmax function to generalize to multiple classes. The softmax function is an extension of the logistic function for multiple classes and is defined as:
+LR can also be extended to handle multi-class classification problems through multinomial logistic regression. In this case, the model uses the softmax function to generalize to multiple classes. The softmax function is an extension of the logistic function for multiple classes and is defined as,
 
 $$Pr(Y = j | X = x_0) = \frac{e^{\mathbf{\beta}_j x_0}}{\sum_{i=1}^{n} e^{\mathbf{\beta}_i \cdot x_0}}$$
 
