@@ -259,3 +259,57 @@ aden_dist_plot
 
 ```
 
+A summary of all the features and their categories are shown in `r ifelse(knitr::is_html_output(), '@tbl-summary-html', '@tbl-summary-pdf')`.
+
+
+::: {.content-visible when-format="pdf"}
+
+```{r include=knitr::is_latex_output()}
+#| label: tbl-summary-pdf
+#| tbl-cap: "Feature Names and their Distinct Values"
+#| tbl-alt: "Feature Names and their Distinct Values"
+
+# Note: this table will only show for PDF versions of the paper.
+gt::gt(dt_summary) |>
+  gt::tab_style(
+    style = list(gt::cell_fill(color = 'white')),
+    locations = gt::cells_body(gt::everything())
+  ) |>
+  gt::cols_width(gt::everything() ~ gt::pct(50))
+
+```
+:::
+
+::: {.content-visible when-format="html"}
+
+```{r include=knitr::is_html_output()}
+#| label: tbl-summary-html
+#| tbl-cap: "Feature Names and their Distinct Values"
+#| tbl-alt: "Feature Names and their Distinct Values"
+
+# Note: this table will only show for HTML versions of the paper.
+
+# Prepare table's theme.
+theme <- reactable::reactableTheme(
+  borderColor = "#dfe2e5",
+  stripedColor = "#f6f8fa",
+  highlightColor = "#f0f5f9",
+  cellPadding = "8px 12px"
+)
+
+reactable::reactable(
+  dt_summary,
+  searchable = FALSE,
+  resizable = TRUE,
+  onClick = "expand",
+  bordered = TRUE,
+  highlight = TRUE,
+  compact = TRUE,
+  height = "auto",
+  theme = theme,
+  pagination = FALSE
+)
+
+```
+:::
+
