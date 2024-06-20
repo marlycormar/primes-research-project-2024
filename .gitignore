@@ -7,6 +7,7 @@ index_cache/
 index_files/
 notebooks/*_cache/
 notebooks/*.ipynb
+notebooks/*.html
 
 /.quarto/
 /_manuscript
