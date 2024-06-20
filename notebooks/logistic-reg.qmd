@@ -107,8 +107,7 @@ tictoc::toc()
 
 ### Model Performance
 
-We then apply our selected model to the test set. The final metrics are given in 
-@tbl-lr-performance.
+We then apply our selected model to the test set. The final metrics are given in `r ifelse(knitr::is_html_output(), '@tbl-lr-performance-html', '@tbl-lr-performance-pdf')`.
 
 ```{r, cache=TRUE, echo=TRUE}
 
@@ -121,18 +120,7 @@ lr_pred <-
 ```
 
 
-```{r}
-#| label: tbl-lr-performance
-#| tbl-cap: 'Logistic Regression Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
-#| tbl-alt: 'Logistic Regression Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
-
-# # Prepare table's theme.
-# theme <- reactable::reactableTheme(
-#   borderColor = "#dfe2e5",
-#   stripedColor = "#f6f8fa", 
-#   highlightColor = "#f0f5f9",
-#   cellPadding = "8px 12px"
-# )
+```{r lr-metrics-tbl}
 
 # Create metrics table.
 lr_metrics_table <- list(
@@ -150,19 +138,43 @@ lr_metrics_table <- list(
   dplyr::mutate(Value = round(Value*100, 1))
 
 readr::write_csv(x = lr_metrics_table, file = here::here('data', 'lr-metrics.csv'))
+```
 
-# lr_metrics_table |>
-#   dplyr::mutate(Value = paste0(Value, '%')) |>
-#   reactable::reactable(
-#     searchable = FALSE, 
-#     resizable = TRUE,
-#     onClick = "expand",
-#     bordered = TRUE,
-#     highlight = TRUE, 
-#     compact = TRUE,
-#     height = "auto",
-#     theme = theme
-#   )
+
+::: {.content-visible when-format="html"}
+```{r include=knitr::is_html_output()}
+#| label: tbl-lr-performance-html
+#| tbl-cap: 'Logistic Regression Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+#| tbl-alt: 'Logistic Regression Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+
+# Prepare table's theme.
+theme <- reactable::reactableTheme(
+  borderColor = "#dfe2e5",
+  stripedColor = "#f6f8fa",
+  highlightColor = "#f0f5f9",
+  cellPadding = "8px 12px"
+)
+
+lr_metrics_table |>
+  dplyr::mutate(Value = paste0(Value, '%')) |>
+  reactable::reactable(
+    searchable = FALSE,
+    resizable = TRUE,
+    onClick = "expand",
+    bordered = TRUE,
+    highlight = TRUE,
+    compact = TRUE,
+    height = "auto",
+    theme = theme
+  )
+```
+:::
+
+::: {.content-visible when-format="pdf"}
+```{r include=knitr::is_latex_output()}
+#| label: tbl-lr-performance-pdf
+#| tbl-cap: 'Logistic Regression Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+#| tbl-alt: 'Logistic Regression Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
 
 gt::gt(lr_metrics_table) |>
   gt::tab_style(
@@ -172,3 +184,4 @@ gt::gt(lr_metrics_table) |>
   gt::cols_width(gt::everything() ~ gt::pct(50))
 
 ```
+:::
