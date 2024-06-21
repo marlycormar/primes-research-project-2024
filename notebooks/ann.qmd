@@ -164,7 +164,6 @@ ann_metrics_table |>
 
 ::: {.content-visible when-format="pdf"}
 ```{r include=knitr::is_latex_output()}
-
 #| label: tbl-ann-performance-pdf
 #| tbl-cap: "ANN Performance Metrics: Accuracy, Precision, Recall, and Specificity."
 #| tbl-alt: "ANN Performance Metrics: Accuracy, Precision, Recall, and Specificity."
