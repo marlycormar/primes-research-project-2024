@@ -152,8 +152,10 @@ models_performance <-
   dplyr::mutate(Value = paste0(round(Value), '%'))
 ```
 
-::: {.content-visible when-format="pdf"}
-```{r include=knitr::is_latex_output()}
+We evaluated the performance of our models on the Thyroid dataset using the metrics shown in [`r ifelse(knitr::is_html_output(), '@tbl-overall-performance-html', '@tbl-overall-performance-pdf')`].
+
+::: {.content-visible when-format="html"}
+```{r include=knitr::is_html_output()}
 #| label: tbl-overall-performance-html
 #| tbl-cap: 'Performance Comparison: Accuracy, Precision, Recall, and Specificity.'
 #| tbl-alt: 'Performance Comparison: Accuracy, Precision, Recall, and Specificity.'
@@ -200,8 +202,8 @@ models_performance |>
 ```
 :::
 
-::: {.content-visible when-format="html"}
-```{r include=knitr::is_html_output()}
+::: {.content-visible when-format="pdf"}
+```{r include=knitr::is_latex_output()}
 #| label: tbl-overall-performance-pdf
 #| tbl-cap: 'Performance Comparison: Accuracy, Precision, Recall, and Specificity.'
 #| tbl-alt: 'Performance Comparison: Accuracy, Precision, Recall, and Specificity.'
