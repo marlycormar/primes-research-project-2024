@@ -1,0 +1,177 @@
+## K-Nearest Neighbors
+
+### Model Description
+
+The K-Nearest Neighbors (KNN) algorithm is a nonparametric method used for classification. It classifies a given sample based on the proximity to the training data. The algorithm determines the class of a point $X$ by identifying the most common class label among its $k$ nearest neighbors, where $k$ is a predetermined hyperparameter. Unlike other algorithms, the KNN classifier does not involve training a model; instead, it memorizes the training data, making it a "lazy" algorithm.
+
+The primary hyperparameters of the KNN algorithm are $k$, the distance measure, and the weight function. Common distance measures include Euclidean distance, Manhattan distance, and Minkowski distance.
+
+Choosing the optimal value for $k$ is crucial and involves balancing the bias-variance tradeoff. A small $k$ results in low bias and high variance. Low bias means the model captures the complexity of the training data very well, but high variance means the model is highly sensitive to the specifics of the training data, often leading to overfitting and higher test errors. As $k$ increases, the model averages over more neighbors, which smooths out the predictions and reduces the model's sensitivity to individual data points, thus reducing variance. Therefore, a large $k$ results in high bias and low variance. The model may become too simplistic, leading to higher bias, but it becomes less sensitive to the training data, making it more robust to noise and better at generalizing to new data.
+
+To avoid classification ties, it is advisable to select $k$ appropriately. For binary classification, this typically means choosing an odd $k$. Additionally, to enhance model flexibility, a weighted version of KNN can be employed, where the influence of each of the $k$ nearest neighbors is weighted inversely by their distance to the test point. We will tune these three parameters below.
+
+
+### Model Workflow
+
+```{r knn-load-data}
+
+# Load the data already computed in the index.qmd file.
+data_split <- readRDS(here::here('data/data_split.rds'))
+data_cross_val <- readRDS(here::here('data/data_cross_val.rds'))
+test_outcome <- readRDS(here::here('data/test_outcome.rds'))
+data_rec <- readRDS(here::here('data/data_rec.rds'))
+
+# Set random seed.
+set.seed(3145)
+
+```
+
+Below we create a KNN model specification and workflow indicating the model hyperparameters: a number of neighbors (i.e., $k$), a weight function, and a distance function. To optimize our model, we will use the `tune::tune()` function to find optimal values of these parameters based on model accuracy.
+
+```{r knn-workflow, cache=TRUE, echo=TRUE}
+
+# Create model specification.
+knn_model_spec <-
+  parsnip::nearest_neighbor(
+    neighbors = tune::tune(),
+    dist_power = tune::tune(),
+    weight_func = tune::tune()
+  ) |>
+  parsnip::set_mode('classification') |>
+  parsnip::set_engine('kknn')
+
+# Create model workflow.
+knn_workflow <- workflows::workflow() |>
+  workflows::add_model(knn_model_spec) |>
+  workflows::add_recipe(data_rec)
+
+```
+
+### Model Tuning and Fitting
+
+Next, we run our prepared workflow. To speed up the computation, we utilize parallel computing, distributing the tasks across multiple cores.
+
+We fine-tune the model hyperparameters (namely $k$, the distance function, and the weight function) using the $10$-fold cross-validation setup. We then select the best model based on accuracy.
+
+```{r knn-param-tunning, cache=TRUE, warning=FALSE, echo=TRUE}
+
+#' Check number of available cores.
+cores_no <- parallel::detectCores() - 1
+
+#' Start timer.
+tictoc::tic()
+
+# Create and register clusters.
+clusters <- parallel::makeCluster(cores_no)
+doParallel::registerDoParallel(clusters)
+
+# Fine-tune the model params.
+knn_res <- tune::tune_grid(
+  object = knn_workflow,
+  resamples = data_cross_val,
+  control = tune::control_resamples(save_pred = TRUE)
+)
+
+# Select the best fit based on accuracy.
+knn_best_fit <- 
+  knn_res |> 
+  tune::select_best(metric = 'accuracy')
+
+# Finalize the workflow with the best parameters.
+knn_final_workflow <- 
+  knn_workflow |>
+  tune::finalize_workflow(knn_best_fit)
+
+# Fit the final model using the best parameters.
+knn_final_fit <- 
+  knn_final_workflow |> 
+  tune::last_fit(data_split)
+
+# Stop clusters.
+parallel::stopCluster(clusters)
+
+# Stop timer.
+tictoc::toc()
+
+```
+
+
+### Model Performance
+
+We then apply our selected model to the test set. The final metrics are given in `r ifelse(knitr::is_html_output(), '@tbl-knn-performance-html', '@tbl-knn-performance-pdf')`.
+
+```{r, cache=TRUE, echo=TRUE}
+
+# Use the best fit to make predictions on the test data.
+knn_pred <- 
+  knn_final_fit |> 
+  tune::collect_predictions() |>
+  dplyr::mutate(truth = factor(.pred_class))
+
+```
+
+
+```{r knn-metrics-tbl}
+
+# Create metrics table.
+knn_metrics_table <- list(
+  'Accuracy' = yardstick::accuracy_vec(truth = knn_pred[['.pred_class']],
+                                       estimate = test_outcome),
+  'Precision' = yardstick::precision_vec(truth = knn_pred[['.pred_class']],
+                                         estimate = test_outcome),
+  'Recall' = yardstick::recall_vec(truth = knn_pred[['.pred_class']],
+                                   estimate = test_outcome),
+  'Specificity' = yardstick::specificity_vec(truth = knn_pred[['.pred_class']],
+                                            estimate = test_outcome)
+) |>
+  dplyr::bind_cols() |>
+  tidyr::pivot_longer(cols = dplyr::everything(), names_to = 'Metric', values_to = 'Value') |>
+  dplyr::mutate(Value = round(Value*100, 1))
+
+readr::write_csv(x = knn_metrics_table, file = here::here('data', 'knn-metrics.csv'))
+```
+
+
+::: {.content-visible when-format="html"}
+```{r include=knitr::is_html_output()}
+#| label: tbl-knn-performance-html
+#| tbl-cap: 'KNN Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+#| tbl-alt: 'KNN Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+
+# Prepare table's theme.
+theme <- reactable::reactableTheme(
+  borderColor = "#dfe2e5",
+  stripedColor = "#f6f8fa", 
+  highlightColor = "#f0f5f9",
+  cellPadding = "8px 12px"
+)
+
+knn_metrics_table |>
+  dplyr::mutate(Value = paste0(Value, '%')) |>
+  reactable::reactable(
+    searchable = FALSE,
+    resizable = TRUE,
+    onClick = "expand",
+    bordered = TRUE,
+    highlight = TRUE,
+    compact = TRUE,
+    height = "auto",
+    theme = theme
+  )
+```
+:::
+
+::: {.content-visible when-format="pdf"}
+```{r include=knitr::is_latex_output()}
+#| label: tbl-knn-performance-pdf
+#| tbl-cap: 'KNN Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+#| tbl-alt: 'KNN Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+gt::gt(knn_metrics_table) |>
+  gt::tab_style(
+    style = list(gt::cell_fill(color = "white")),
+    locations = gt::cells_body(gt::everything())
+  ) |>
+  gt::cols_width(gt::everything() ~ gt::pct(50))
+
+```
+:::

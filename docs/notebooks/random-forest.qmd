@@ -1,0 +1,172 @@
+## Random Forest
+
+### Model Description
+
+Random forest is an ensemble learning method that constructs multiple decision trees during training and outputs the mode of the classes (classification) or mean prediction (regression) of the individual trees. This method is particularly effective for classification problems, such as the one we are dealing with in the Thyroid dataset where the target variable is categorical. Each decision tree in a random forest splits the predictor space into distinct regions using recursive binary splits. For instance, a tree might first split based on whether $\text{Age}<35$ and then further split based on whether $\text{Gender}=\text{Female}$ to predict cancer recurrence. These splits are chosen to minimize a specific error criterion, such as the Gini index or entropy [@james2021].
+
+A significant limitation of individual decision trees is their high variance; small changes in the training data can lead to very different tree structures. Random forest addresses this by using bagging, where multiple trees are trained on different bootstrap samples of the data. The final prediction is made by aggregating the predictions of all the trees, typically through majority voting in classification problems. This process reduces variance because the average of many uncorrelated trees' predictions is less variable than the prediction of a single tree.
+
+Random forest further reduces correlation between trees by selecting a random subset of predictors to consider for each split, rather than considering all predictors. Typically, for classification problems, this subset size is approximately $\sqrt{p}$, where $p$ is the total number of predictors. This random selection of features ensures that the trees are less similar to each other, which reduces the correlation between their predictions and leads to a greater reduction in variance. By combining bagging with feature randomness, random forests create robust models that are less prone to overfitting and provide better generalization to new data.
+
+### Model Workflow
+
+```{r rf-load-data}
+
+library(tidymodels)
+
+# Load the data already computed in the index.qmd file.
+data_split <- readRDS(here::here('data/data_split.rds'))
+data_cross_val <- readRDS(here::here('data/data_cross_val.rds'))
+test_outcome <- readRDS(here::here('data/test_outcome.rds'))
+data_rec <- readRDS(here::here('data/data_rec.rds'))
+
+# Set random seed.
+set.seed(3145)
+
+```
+
+In this section, we will set up a workflow to train our Random Forest model. The goal is to optimize the following hyperparameters to achieve the best performance on our classification task:
+
+- `trees`: This parameter specifies the total number of trees to be grown in the forest. Tuning the number of trees can help ensure that the model is robust and neither overfitting nor underfitting the data.
+- `min_n`: This parameter sets the minimum number of observations required in a terminal node. Tuning `min_n` helps control the size of the trees, affecting the model's ability to generalize to new data.
+
+```{r rf-workflow, echo=TRUE}
+
+# Create model specification.
+rf_model_spec <- 
+  parsnip::rand_forest(
+    trees = 500,
+    min_n = tune::tune()
+  ) |>
+  parsnip::set_engine('ranger') |>
+  parsnip::set_mode('classification')
+
+# Create model workflow.
+rf_workflow <- workflows::workflow() |>
+  workflows::add_model(rf_model_spec) |>
+  workflows::add_recipe(data_rec)
+
+```
+
+### Model Tuning and Fitting
+
+```{r rf-param-tunning, echo=TRUE}
+
+#' Check number of available cores.
+cores_no <- parallel::detectCores() - 1
+
+#' Start timer.
+tictoc::tic()
+
+# Create and register clusters.
+clusters <- parallel::makeCluster(cores_no)
+doParallel::registerDoParallel(clusters)
+
+# Fine-tune the model params.
+rf_res <- tune::tune_grid(
+  object = rf_workflow,
+  resamples = data_cross_val,
+  control = tune::control_resamples(save_pred = TRUE)
+)
+
+# Select the best fit based on accuracy.
+rf_best_fit <- 
+  rf_res |> 
+  tune::select_best(metric = 'accuracy')
+
+# Finalize the workflow with the best parameters.
+rf_final_workflow <- 
+  rf_workflow |>
+  tune::finalize_workflow(rf_best_fit)
+
+# Fit the final model using the best parameters.
+rf_final_fit <- 
+  rf_final_workflow |> 
+  tune::last_fit(data_split)
+
+# Stop clusters.
+parallel::stopCluster(clusters)
+
+# Stop timer.
+tictoc::toc()
+
+```
+
+### Model Performance
+
+We then apply our selected model to the test set. The final metrics are given in `r ifelse(knitr::is_html_output(), '@tbl-rf-performance-html', '@tbl-rf-performance-pdf')`.
+
+```{r, cache=TRUE, echo=TRUE}
+
+# Use the best fit to make predictions on the test data.
+rf_pred <- 
+  rf_final_fit |> 
+  tune::collect_predictions() |>
+  dplyr::mutate(truth = factor(.pred_class))
+
+```
+
+```{r rf-metrics-tbl}
+
+# Create metrics table.
+rf_metrics_table <- list(
+  'Accuracy' = yardstick::accuracy_vec(truth = rf_pred[['.pred_class']],
+                                       estimate = test_outcome),
+  'Precision' = yardstick::precision_vec(truth = rf_pred[['.pred_class']],
+                                         estimate = test_outcome),
+  'Recall' = yardstick::recall_vec(truth = rf_pred[['.pred_class']],
+                                   estimate = test_outcome),
+  'Specificity' = yardstick::specificity_vec(truth = rf_pred[['.pred_class']],
+                                            estimate = test_outcome)
+) |>
+  dplyr::bind_cols() |>
+  tidyr::pivot_longer(cols = dplyr::everything(), names_to = 'Metric', values_to = 'Value') |>
+  dplyr::mutate(Value = round(Value*100, 1))
+
+readr::write_csv(x = rf_metrics_table, file = here::here('data', 'rf-metrics.csv'))
+```
+
+::: {.content-visible when-format="html"}
+```{r include=knitr::is_html_output()}
+#| label: tbl-rf-performance-html
+#| tbl-cap: 'Random Forest Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+#| tbl-alt: 'Random Forest Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+
+# Prepare table's theme.
+theme <- reactable::reactableTheme(
+  borderColor = '#dfe2e5',
+  stripedColor = '#f6f8fa',
+  highlightColor = '#f0f5f9',
+  cellPadding = '8px 12px'
+)
+
+rf_metrics_table |>
+  dplyr::mutate(Value = paste0(Value, '%')) |>
+  reactable::reactable(
+    searchable = FALSE,
+    resizable = TRUE,
+    onClick = 'expand',
+    bordered = TRUE,
+    highlight = TRUE,
+    compact = TRUE,
+    height = 'auto',
+    theme = theme
+  )
+```
+:::
+
+::: {.content-visible when-format="pdf"}
+```{r include=knitr::is_latex_output()}
+#| label: tbl-rf-performance-pdf
+#| tbl-cap: 'Random Forest Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+#| tbl-alt: 'Random Forest Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+
+gt::gt(rf_metrics_table) |>
+  gt::tab_style(
+    style = list(gt::cell_fill(color = "white")),
+    locations = gt::cells_body(gt::everything())
+  ) |>
+  gt::cols_width(gt::everything() ~ gt::pct(50))
+
+```
+:::

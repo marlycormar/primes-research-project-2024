@@ -1,0 +1,187 @@
+## Logistic Regression
+
+### Model Description
+
+Logistic Regression (LR) is a supervised learning algorithm widely used for classification problems. It is particularly effective for binary classification tasks, where the outcome variable can take one of two possible values. The model predicts the probability that a given input belongs to a specific class by applying the logistic (sigmoid) function, which transforms a linear combination of input features into a probability value between $0$ and $1$.
+
+For binary classification, the logistic function is defined as $\sigma(\hat{Y}_i) = 1/(1 + e^{-\hat{Y}_i})$ where $\hat{Y}$ is a linear combination of the input features. The probability of the outcome $i$ being the positive class (represented as 1) is given by:
+
+$$\sigma(\hat{Y}_i) = \sigma(\beta_0 + \beta_1 X_{1, i} + \beta_2 X_{2, i} + \ldots + \beta_p X_{p, i}),$$
+
+where $\beta_0$ is the intercept, and $\beta_1, \beta_2, \ldots, \beta_p$ are the coefficients corresponding to the input features $X_1, X_2, \ldots, X_p$. These coefficients are estimated using the method of maximum likelihood estimation (MLE), which maximizes the likelihood of the observed data.
+
+LR can also be extended to handle multi-class classification problems through multinomial logistic regression. In this case, the model uses the softmax function to generalize to multiple classes. The softmax function is an extension of the logistic function for multiple classes and is defined as,
+
+$$Pr(Y = j | X = x_0) = \frac{e^{\mathbf{\beta}_j x_0}}{\sum_{i=1}^{n} e^{\mathbf{\beta}_i \cdot x_0}}$$
+
+where $x_0$ is an observation, $n$ is the number of classes, and $\mathbf{\beta}_j$ is the coefficient vector for class $j$.
+
+The primary advantage of LR is its interpretability. Each coefficient indicates the change in the log-odds of the outcome for a one-unit change in the corresponding predictor variable. This provides clear insights into the influence of each predictor on the probability of the outcome. Despite its simplicity, LR is a powerful tool for both binary and multi-class classification, making it suitable for a wide range of applications where the relationship between the predictors and the log-odds is approximately linear.
+
+
+### Model Workflow
+
+```{r lr-load-data}
+
+# Load the data already computed in the index.qmd file.
+data_split <- readRDS(here::here('data/data_split.rds'))
+data_cross_val <- readRDS(here::here('data/data_cross_val.rds'))
+test_outcome <- readRDS(here::here('data/test_outcome.rds'))
+data_rec <- readRDS(here::here('data/data_rec.rds'))
+
+# Set random seed.
+set.seed(3145)
+
+```
+
+In this section, we will train our LR model and find the
+optimal values for the model parameters. The key parameter we will optimize is
+the penalty parameter, which refers to the regularization term added to the loss
+function to prevent overfitting. We will find the optimal penalty value to
+improve model performance. Additionally, we will set mixture = 1 to apply
+Lasso regularization, which helps in potentially removing irrelevant predictors
+and choosing a simpler model.
+
+
+```{r lr-workflow, cache=TRUE, echo=TRUE}
+
+# Create model specification.
+lr_model_spec <-
+  parsnip::logistic_reg(
+    penalty = tune(),
+    mixture = 1) |>
+  parsnip::set_mode('classification') |>
+  parsnip::set_engine('glmnet')
+
+# Create model workflow.
+lr_workflow <- workflows::workflow() |>
+  workflows::add_model(lr_model_spec) |>
+  workflows::add_recipe(data_rec)
+
+```
+
+### Model Tuning and Fitting
+
+
+```{r lr-param-tunning, cache=TRUE, warning=FALSE, echo=TRUE}
+
+#' Check number of available cores.
+cores_no <- parallel::detectCores() - 1
+
+#' Start timer.
+tictoc::tic()
+
+# Create and register clusters.
+clusters <- parallel::makeCluster(cores_no)
+doParallel::registerDoParallel(clusters)
+
+# Fine-tune the model params.
+lr_res <- tune::tune_grid(
+  object = lr_workflow,
+  resamples = data_cross_val,
+  control = tune::control_resamples(save_pred = TRUE)
+)
+
+# Select the best fit based on accuracy.
+lr_best_fit <- 
+  lr_res |> 
+  tune::select_best(metric = 'accuracy')
+
+# Finalize the workflow with the best parameters.
+lr_final_workflow <- 
+  lr_workflow |>
+  tune::finalize_workflow(lr_best_fit)
+
+# Fit the final model using the best parameters.
+lr_final_fit <- 
+  lr_final_workflow |> 
+  tune::last_fit(data_split)
+
+# Stop clusters.
+parallel::stopCluster(clusters)
+
+# Stop timer.
+tictoc::toc()
+
+```
+
+### Model Performance
+
+We then apply our selected model to the test set. The final metrics are given in `r ifelse(knitr::is_html_output(), '@tbl-lr-performance-html', '@tbl-lr-performance-pdf')`.
+
+```{r, cache=TRUE, echo=TRUE}
+
+# Use the best fit to make predictions on the test data.
+lr_pred <- 
+  lr_final_fit |> 
+  tune::collect_predictions() |>
+  dplyr::mutate(truth = factor(.pred_class))
+
+```
+
+
+```{r lr-metrics-tbl}
+
+# Create metrics table.
+lr_metrics_table <- list(
+  'Accuracy' = yardstick::accuracy_vec(truth = lr_pred[['.pred_class']],
+                                       estimate = test_outcome),
+  'Precision' = yardstick::precision_vec(truth = lr_pred[['.pred_class']],
+                                         estimate = test_outcome),
+  'Recall' = yardstick::recall_vec(truth = lr_pred[['.pred_class']],
+                                   estimate = test_outcome),
+  'Specificity' = yardstick::specificity_vec(truth = lr_pred[['.pred_class']],
+                                            estimate = test_outcome)
+) |>
+  dplyr::bind_cols() |>
+  tidyr::pivot_longer(cols = dplyr::everything(), names_to = 'Metric', values_to = 'Value') |>
+  dplyr::mutate(Value = round(Value*100, 1))
+
+readr::write_csv(x = lr_metrics_table, file = here::here('data', 'lr-metrics.csv'))
+```
+
+
+::: {.content-visible when-format="html"}
+```{r include=knitr::is_html_output()}
+#| label: tbl-lr-performance-html
+#| tbl-cap: 'Logistic Regression Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+#| tbl-alt: 'Logistic Regression Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+
+# Prepare table's theme.
+theme <- reactable::reactableTheme(
+  borderColor = "#dfe2e5",
+  stripedColor = "#f6f8fa",
+  highlightColor = "#f0f5f9",
+  cellPadding = "8px 12px"
+)
+
+lr_metrics_table |>
+  dplyr::mutate(Value = paste0(Value, '%')) |>
+  reactable::reactable(
+    searchable = FALSE,
+    resizable = TRUE,
+    onClick = "expand",
+    bordered = TRUE,
+    highlight = TRUE,
+    compact = TRUE,
+    height = "auto",
+    theme = theme
+  )
+```
+:::
+
+::: {.content-visible when-format="pdf"}
+```{r include=knitr::is_latex_output()}
+#| label: tbl-lr-performance-pdf
+#| tbl-cap: 'Logistic Regression Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+#| tbl-alt: 'Logistic Regression Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+
+gt::gt(lr_metrics_table) |>
+  gt::tab_style(
+    style = list(gt::cell_fill(color = "white")),
+    locations = gt::cells_body(gt::everything())
+  ) |>
+  gt::cols_width(gt::everything() ~ gt::pct(50))
+
+```
+:::

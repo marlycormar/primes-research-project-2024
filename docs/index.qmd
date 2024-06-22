@@ -1,0 +1,328 @@
+---
+title: 'Comparative Analysis of Machine Learning Models for Thyroid Cancer Recurrence Prediction'
+author:
+  - name: Anay Aggarwal
+    affiliations: MIT PRIMES
+    email: anay.aggarwal.2007@gmail.com
+  - name: Ekam Kaur
+    affiliations: MIT PRIMES
+    email: ekam2466@gmail.com
+  - name: Susie Lu
+    affiliations: MIT PRIMES
+    email: S2010Lu@gmail.com
+keywords:
+  - Cancer Research
+  - Machine Learning
+  - ANN
+  - KNN
+  - SVM
+  - Logistic Regression
+  - XGBoost
+  - Random Forest
+abstract: |
+  This study assesses the efficacy of machine learning algorithms—Artificial Neural Network, K-Nearest Neighbors, Support Vector Machine, Logistic Regression, Extreme Gradient Boosting, and Random Forest—in predicting recurrence in Differentiated Thyroid Cancer (DTC). Using a comprehensive dataset from the UCI Machine Learning Repository, we conduct a comparative analysis of these algorithms based on key performance metrics. Our investigation seeks to identify the best model for predicting DTC recurrence, aiming to advance personalized treatment strategies and improve clinical outcomes in thyroid cancer care.
+date: last-modified
+bibliography: references.bib
+citation:
+  container-title: Machine Learning and Cancer Research
+number-sections: true
+#' Citation styles can be found here:
+#' https://github.com/citation-style-language/styles
+#' You can also search by example:
+#' https://editor.citationstyles.org/searchByExample/
+# csl: bib-format/elsevier-harvard.csl
+csl: bib-format/institute-of-mathematical-statistics.csl
+---
+
+<!----------------------------------------------------------------------------->
+<!---------------------------- ## INTRODUCTION -------------------------------->
+<!----------------------------------------------------------------------------->
+{{< include notebooks/intro.qmd >}}
+
+
+<!----------------------------------------------------------------------------->
+<!------------------------------ ## NOTATION ---------------------------------->
+<!----------------------------------------------------------------------------->
+{{< include notebooks/notation.qmd >}}
+
+
+<!----------------------------------------------------------------------------->
+<!--------------------------- ## DATA & METHODS ------------------------------->
+<!----------------------------------------------------------------------------->
+
+<!-- EDA --->
+{{< include notebooks/eda.qmd >}}
+
+
+<!----------------------------------------------------------------------------->
+<!--------------------------------- ## MODELS --------------------------------->
+<!----------------------------------------------------------------------------->
+
+# Model Training
+
+Let us split the cleaned data set into a training ($75\%$) set and a test ($25\%$) set using a random generator. The training data will be further separated into 10 folds for cross-validation.
+
+```{r data-split, echo=TRUE}
+
+# Split data into training and test sets.
+set.seed(314)
+data_split <- rsample::initial_split(cleaned_data)
+train_data <- rsample::training(data_split)
+test_data <- rsample::testing(data_split)
+
+# Split the training data into 10-folds for cross-validation.
+set.seed(3145)
+data_cross_val <- rsample::vfold_cv(train_data)
+
+# Set aside the outcome column of the sample test data.
+test_outcome <- factor(test_data$Recurred)
+
+```
+
+The `recipes` package is useful to create a blueprint of the pre-processing steps that will be applied to our data during model training. We use this package to specify that
+
+- the minimum number of features with absolute correlations less that $0.6$ should be removed,
+- the numeric features should be normalized, and
+- the categorical variables should be transformed into numerical variables.
+
+```{r data-recipes, echo=TRUE}
+
+# Create recipe for the data prep.
+data_rec <- recipes::recipe(Recurred ~ ., data = train_data) |>
+  recipes::step_corr(threshold = 0.6) |>
+  recipes::step_normalize(recipes::all_numeric()) |>
+  recipes::step_dummy(recipes::all_nominal_predictors())
+
+```
+
+
+```{r save-data}
+
+#' Save split data and the recipes to be used by the notebooks scripts.
+#' This is important to avoid differences in the scripts and remove duplicate
+#' computations.
+#' Note that this is not shown in the paper.
+saveRDS(data_split, 'data/data_split.rds')
+saveRDS(data_cross_val, 'data/data_cross_val.rds')
+saveRDS(test_outcome, 'data/test_outcome.rds')
+saveRDS(data_rec, 'data/data_rec.rds')
+
+```
+
+{{< include notebooks/knn.qmd >}}
+{{< include notebooks/svm.qmd >}}
+{{< include notebooks/ann.qmd >}}
+{{< include notebooks/logistic-reg.qmd >}}
+{{< include notebooks/xgboost.qmd >}}
+{{< include notebooks/random-forest.qmd >}}
+
+# Model Comparison
+
+To assess model performance, we will compare the accuracy, precision, recall, and specificity metrics of our models. These metrics are defined as follows.
+
+- Accuracy: proportion of correct predictions for the test data or $\frac{TN + TP}{TN + TP + FN + FP}$. 
+
+- Precision: proportion of correctly classified positive observations among all observations that are classified as positive by the model or $\frac{TP}{TP + FP}$.
+
+- Recall: proportion of correctly classified positive observations among all actual positive observations or $\frac{TP}{TP + FN}$.
+
+- Specificity: proportion of correctly classified negative observations among all actual negative observations or $\frac{TN}{TN + FP}$.
+
+
+```{r model-comparison}
+models_performance <-
+  dplyr::bind_rows(
+    readr::read_csv('data/knn-metrics.csv') |>
+      dplyr::mutate('Model' = 'KNN', .before = 1),
+    readr::read_csv('data/svm-metrics.csv') |>
+      dplyr::mutate('Model' = 'SVM', .before = 1),
+    readr::read_csv('data/ann-metrics.csv') |>
+      dplyr::mutate('Model' = 'ANN', .before = 1),
+    readr::read_csv('data/lr-metrics.csv') |>
+      dplyr::mutate('Model' = 'Logistic Regression', .before = 1),
+    readr::read_csv('data/xgboost-metrics.csv') |>
+      dplyr::mutate('Model' = 'XGBoost', .before = 1),
+    readr::read_csv('data/rf-metrics.csv') |>
+      dplyr::mutate('Model' = 'Random Forest', .before = 1)
+  ) |>
+  dplyr::filter(Value == max(Value), .by = Metric) |>
+  dplyr::reframe(Model = paste0(Model, collapse = ', '), .by = c(Metric, Value)) |>
+  dplyr::select(Metric, Model, Value) |>
+  dplyr::arrange(Metric) |>
+  dplyr::mutate(Value = paste0(round(Value), '%'))
+```
+
+We evaluated the performance of our models on the Thyroid dataset using the metrics shown in [`r ifelse(knitr::is_html_output(), '@tbl-overall-performance-html', '@tbl-overall-performance-pdf')`].
+
+::: {.content-visible when-format="html"}
+```{r include=knitr::is_html_output()}
+#| label: tbl-overall-performance-html
+#| tbl-cap: 'Performance Comparison: Accuracy, Precision, Recall, and Specificity.'
+#| tbl-alt: 'Performance Comparison: Accuracy, Precision, Recall, and Specificity.'
+
+# Set table's theme.
+theme <- reactable::reactableTheme(
+  borderColor = '#dfe2e5',
+  stripedColor = '#f6f8fa',
+  highlightColor = '#f0f5f9',
+  cellPadding = '8px 12px'
+)
+
+# Set bar theme.
+bar_chart <- function(label, width = "100%", height = "1rem", fill = "#00bfc4", background = NULL) {
+  bar <- htmltools::div(style = list(background = fill, width = width, height = height))
+  chart <- htmltools::div(style = list(flexGrow = 1, marginLeft = "0.5rem", background = background), bar)
+  htmltools::div(style = list(display = "flex", alignItems = "center"), label, chart)
+}
+
+models_performance |>
+  reactable::reactable(
+    searchable = FALSE,
+    resizable = TRUE,
+    onClick = 'expand',
+    bordered = TRUE,
+    highlight = TRUE,
+    compact = TRUE,
+    height = 'auto',
+    theme = theme,
+    columns = list(
+      Value = reactable::colDef(
+        align = "left",
+        cell = function(value) {
+          bar_chart(
+            label = value,
+            width = value,
+            fill = "#fc5185",
+            background = "#e1e1e1"
+          )
+        })
+    )
+  )
+
+```
+:::
+
+::: {.content-visible when-format="pdf"}
+```{r include=knitr::is_latex_output()}
+#| label: tbl-overall-performance-pdf
+#| tbl-cap: 'Performance Comparison: Accuracy, Precision, Recall, and Specificity.'
+#| tbl-alt: 'Performance Comparison: Accuracy, Precision, Recall, and Specificity.'
+
+gt::gt(models_performance) |>
+  gt::tab_style(
+    style = list(gt::cell_fill(color = "white")),
+    locations = gt::cells_body(gt::everything())
+  ) |>
+  gt::cols_width(gt::everything() ~ gt::pct(100/3))
+```
+:::
+
+The Random Forest model emerged as the top performer in terms of overall accuracy and specificity, achieving a $94\%$ accuracy rate and a $94\%$ specificity rate, indicating its robustness in correctly identifying negative cases. The precision metric, though the lowest among the metrics, was $85\%$ across the Artificial Neural Network, Logistic Regression, and Random Forest models, reflecting their ability to correctly classify positive cases. The Support Vector Machine model stood out in terms of recall, achieving a perfect score of $100\%$, suggesting its effectiveness in capturing all positive cases. These results highlight the Random Forest model as the most balanced and reliable for this classification task, combining high accuracy and specificity with competitive precision, while the SVM model excels in recall, making it particularly suitable for ensuring that all positive cases are identified.
+
+<!-- ```{r model-metrics} -->
+<!-- #| label: tbl-overall-performance -->
+<!-- #| tbl-cap: "Performance Metrics for KNN, SVM, and ANN in Terms of Accuracy, Precision, Recall, and Specificity" -->
+<!-- #| tbl-alt: "Performance Metrics for KNN, SVM, and ANN in Terms of Accuracy, Precision, Recall, and Specificity" -->
+
+<!-- # Compile metrics for each model. -->
+<!-- models_performance <- -->
+<!--   dplyr::bind_rows( -->
+<!--     readr::read_csv('data/knn-metrics.csv') |> -->
+<!--       dplyr::mutate('Model' = 'KNN', .before = 1), -->
+<!--     readr::read_csv('data/svm-metrics.csv') |> -->
+<!--       dplyr::mutate('Model' = 'SVM', .before = 1), -->
+<!--     readr::read_csv('data/ann-metrics.csv') |> -->
+<!--       dplyr::mutate('Model' = 'ANN', .before = 1) -->
+<!--   ) -->
+
+<!-- # Prepare table's theme. -->
+<!-- theme <- reactable::reactableTheme( -->
+<!--   borderColor = "#dfe2e5", -->
+<!--   stripedColor = "#f6f8fa", -->
+<!--   highlightColor = "#f0f5f9", -->
+<!--   cellPadding = "8px 12px" -->
+<!-- ) -->
+
+<!-- # Show models' performance. -->
+<!-- models_performance |> -->
+<!--   dplyr::mutate(Value = paste0(Value, '%')) |> -->
+<!--   reactable::reactable( -->
+<!--     defaultExpanded = TRUE, -->
+<!--     groupBy = 'Model', -->
+<!--     searchable = FALSE, -->
+<!--     resizable = TRUE, -->
+<!--     onClick = "expand", -->
+<!--     bordered = TRUE, -->
+<!--     highlight = TRUE, -->
+<!--     compact = TRUE, -->
+<!--     height = "auto", -->
+<!--     theme = theme -->
+<!--   ) -->
+
+<!-- ``` -->
+
+
+<!----------------------------------------------------------------------------->
+<!---------------------------- ## CONCLUSION ---------------------------------->
+<!----------------------------------------------------------------------------->
+
+{{< include notebooks/conclusion.qmd >}}
+
+<!----------------------------------------------------------------------------->
+<!------------------------- ## INFORMED CONSENT ------------------------------->
+<!----------------------------------------------------------------------------->
+# Informed Consent
+
+We used anonymous data for modeling and no consent was required for conducting this study.
+
+<!----------------------------------------------------------------------------->
+<!----------------------------- ## REVIEW BOARD ------------------------------->
+<!----------------------------------------------------------------------------->
+# Institutional Review Board Statement
+
+Not applicable
+
+
+<!----------------------------------------------------------------------------->
+<!----------------------------- ## FUNDING ------------------------------------>
+<!----------------------------------------------------------------------------->
+# Funding
+
+There was no funding for conducting this study.
+
+
+<!----------------------------------------------------------------------------->
+<!------------------------ ## DATA AVAILABILITY ------------------------------->
+<!----------------------------------------------------------------------------->
+# Data Availability Statement 
+
+The data is available at the UC Irvine Machine Learning Repository @ucidata. For more information, please refer to @borzooei2023.
+
+<!----------------------------------------------------------------------------->
+<!----------------------- ## ACKNOWLEDGMENTS ---------------------------------->
+<!----------------------------------------------------------------------------->
+# Acknowledgments
+
+We thank our PRIMES mentor, Dr. Marly Gotti, for her guidance throughout the reading and research periods. We are also grateful to the PRIMES organizers for making this program possible.
+
+<!----------------------------------------------------------------------------->
+<!--------------------------- ## CONFLICTS ------------------------------------>
+<!----------------------------------------------------------------------------->
+# Conflicts of Interest
+
+None
+
+<!----------------------------------------------------------------------------->
+<!------------------------- ## ABBREVIATIONS ---------------------------------->
+<!----------------------------------------------------------------------------->
+{{< include notebooks/abbv.qmd >}}
+
+
+<!----------------------------------------------------------------------------->
+<!-------------------------- ## REFERENCES ------------------------------------>
+<!----------------------------------------------------------------------------->
+# References {.unnumbered}
+
+:::{#refs}
+
+:::

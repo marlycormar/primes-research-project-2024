@@ -1,0 +1,185 @@
+## Extreme Gradient Boosting
+
+### Model Description
+
+Extreme Gradient Boosting (XGBoost) is an advanced implementation of gradient boosting designed to enhance performance and speed. It builds upon the principles of gradient boosting to provide a highly efficient, flexible, and portable library that supports both regression and classification tasks. XGBoost has become one of the most popular machine learning algorithms due to its high performance and scalability.
+
+XGBoost operates by sequentially adding decision trees to an ensemble. Each tree is built to correct the errors of the previous trees in the ensemble. The process begins with an initial model, typically a simple model such as the mean of the target variable. At each subsequent step, a new decision tree is added to the model to predict the residuals (errors) of the previous trees. Each tree is built by optimizing an objective function that combines a loss function and a regularization term. The regularization term helps prevent overfitting by penalizing the complexity of the model. After each tree is added, the residuals are updated. The new tree aims to minimize these residuals, improving the overall model's performance.
+
+The node splitting in each tree is guided by an objective function, which typically involves minimizing a loss function (such as mean squared error for regression or log loss for classification) while including a regularization term. The final prediction is the sum of the predictions from all the trees in the ensemble, effectively reducing variance. This process is depicted in the attached flowchart, showing how each tree contributes to the final model.
+
+XGBoost has several key advantages. It incorporates both L1 (Lasso) and L2 (Ridge) regularization to prevent overfitting and manage model complexity. The algorithm supports parallel processing, significantly speeding up the training process. XGBoost can handle missing values internally, making it robust to incomplete datasets. Additionally, users can define custom objective functions and evaluation metrics, allowing for flexibility in optimization.
+
+### Model Workflow
+
+```{r xgboost-load-data}
+
+library(tidymodels)
+
+# Load the data already computed in the index.qmd file.
+data_split <- readRDS(here::here('data/data_split.rds'))
+data_cross_val <- readRDS(here::here('data/data_cross_val.rds'))
+test_outcome <- readRDS(here::here('data/test_outcome.rds'))
+data_rec <- readRDS(here::here('data/data_rec.rds'))
+
+# Set random seed.
+set.seed(3145)
+
+```
+
+To effectively train our XGBoost model and find the optimal hyperparameters, we will set up a workflow that includes model specification and data preprocessing. The hyperparameters to be tuned include:
+
+- `tree_depth`: Controls the maximum depth of each tree, impacting the model's complexity.
+- `min_n`: Specifies the minimum number of observations that must exist in a node for a split to be attempted, preventing overly specific branches and encouraging generalization.
+- `loss_reduction`: Sets the minimum reduction in the loss function required to make a further partition on a leaf node, helping to control overfitting by making the algorithm more conservative.
+- `sample_size`: Determines the fraction of the training data used for fitting each individual tree, introducing randomness and preventing overfitting.
+- `mtry`: Sets the number of features considered when looking for the best split, adding variability to enhance generalization.
+- `learn_rate`: Also known as the shrinkage parameter, controls the rate at which the model learns. Smaller learning rates can lead to better performance by allowing the model to learn more slowly and avoid overfitting.
+
+```{r xgboost-workflow, cache=TRUE, echo=TRUE}
+
+# Create model specification.
+xgboost_model_spec <- 
+  boost_tree(
+    trees = 1000,
+    tree_depth = tune(), 
+    min_n = tune(),
+    loss_reduction = tune(),
+    sample_size = tune(), 
+    mtry = tune(),
+    learn_rate = tune()
+  ) |>
+  set_engine('xgboost') |>
+  set_mode('classification')
+
+# Create model workflow.
+xgboost_workflow <- workflows::workflow() |>
+  workflows::add_model(xgboost_model_spec) |>
+  workflows::add_recipe(data_rec)
+
+```
+
+### Model Tuning and Fitting
+
+
+```{r xgboost-param-tunning, cache=TRUE, warning=FALSE, echo=TRUE}
+
+#' Check number of available cores.
+cores_no <- parallel::detectCores() - 1
+
+#' Start timer.
+tictoc::tic()
+
+# Create and register clusters.
+clusters <- parallel::makeCluster(cores_no)
+doParallel::registerDoParallel(clusters)
+
+# Fine-tune the model params.
+xgboost_res <- tune::tune_grid(
+  object = xgboost_workflow,
+  resamples = data_cross_val,
+  control = tune::control_resamples(save_pred = TRUE)
+)
+
+# Select the best fit based on accuracy.
+xgboost_best_fit <- 
+  xgboost_res |> 
+  tune::select_best(metric = 'accuracy')
+
+# Finalize the workflow with the best parameters.
+xgboost_final_workflow <- 
+  xgboost_workflow |>
+  tune::finalize_workflow(xgboost_best_fit)
+
+# Fit the final model using the best parameters.
+xgboost_final_fit <- 
+  xgboost_final_workflow |> 
+  tune::last_fit(data_split)
+
+# Stop clusters.
+parallel::stopCluster(clusters)
+
+# Stop timer.
+tictoc::toc()
+
+```
+
+### Model Performance
+
+We then apply our selected model to the test set. The final metrics are given in `r ifelse(knitr::is_html_output(), '@tbl-xgboost-performance-html', '@tbl-xgboost-performance-pdf')`.
+
+```{r xgboost-performance, echo=TRUE}
+
+# Use the best fit to make predictions on the test data.
+xgboost_pred <- 
+  xgboost_final_fit |> 
+  tune::collect_predictions() |>
+  dplyr::mutate(truth = factor(.pred_class))
+
+```
+
+
+```{r xgboost-metrics-tbl}
+
+# Create metrics table.
+xgboost_metrics_table <- list(
+  'Accuracy' = yardstick::accuracy_vec(truth = xgboost_pred[['.pred_class']],
+                                       estimate = test_outcome),
+  'Precision' = yardstick::precision_vec(truth = xgboost_pred[['.pred_class']],
+                                         estimate = test_outcome),
+  'Recall' = yardstick::recall_vec(truth = xgboost_pred[['.pred_class']],
+                                   estimate = test_outcome),
+  'Specificity' = yardstick::specificity_vec(truth = xgboost_pred[['.pred_class']],
+                                            estimate = test_outcome)
+) |>
+  dplyr::bind_cols() |>
+  tidyr::pivot_longer(cols = dplyr::everything(), names_to = 'Metric', values_to = 'Value') |>
+  dplyr::mutate(Value = round(Value*100, 1))
+
+readr::write_csv(x = xgboost_metrics_table, file = here::here('data', 'xgboost-metrics.csv'))
+```
+
+::: {.content-visible when-format="html"}
+```{r include=knitr::is_html_output()}
+#| label: tbl-xgboost-performance-html
+#| tbl-cap: 'XGBoost Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+#| tbl-alt: 'XGBoost Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+
+# Prepare table's theme.
+theme <- reactable::reactableTheme(
+  borderColor = "#dfe2e5",
+  stripedColor = "#f6f8fa", 
+  highlightColor = "#f0f5f9",
+  cellPadding = "8px 12px"
+)
+
+xgboost_metrics_table |>
+  dplyr::mutate(Value = paste0(Value, '%')) |>
+  reactable::reactable(
+    searchable = FALSE, 
+    resizable = TRUE,
+    onClick = "expand",
+    bordered = TRUE,
+    highlight = TRUE, 
+    compact = TRUE,
+    height = "auto",
+    theme = theme
+  )
+
+```
+:::
+
+::: {.content-visible when-format="pdf"}
+```{r include=knitr::is_latex_output()}
+#| label: tbl-xgboost-performance-pdf
+#| tbl-cap: 'XGBoost Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+#| tbl-alt: 'XGBoost Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+
+gt::gt(xgboost_metrics_table) |>
+  gt::tab_style(
+    style = list(gt::cell_fill(color = "white")),
+    locations = gt::cells_body(gt::everything())
+  ) |>
+  gt::cols_width(gt::everything() ~ gt::pct(50))
+```
+:::

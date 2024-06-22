@@ -1,0 +1,179 @@
+
+## Artificial Neural Network
+
+### Model Description
+
+Artificial Neural Networks (ANNs) are a class of machine learning algorithms inspired by the structure and function of the human brain. They consist of interconnected layers of nodes, or neurons, which process input data to perform tasks such as classification, regression, and pattern recognition. ANNs are particularly effective for complex tasks like image and speech recognition, natural language processing, financial forecasting, and medical diagnosis.
+
+An ANN is composed of multiple layers, including an input layer, one or more hidden layers, and an output layer. The input layer receives the raw data, the hidden layers process the data through various transformations, and the output layer produces the final prediction or classification. Each connection between neurons has an associated weight, and each neuron has a bias term. These parameters are adjusted during the training process to minimize the error in predictions.
+
+The training process of an ANN involves forward propagation, where input data is passed through the network layer by layer. Each neuron applies an activation function to compute its output, introducing non-linearity to help the network learn complex patterns. The loss, or error, between the network's output and the true target values is calculated using a loss function. Through backpropagation, the loss is propagated backward through the network, and the weights and biases are adjusted using an optimization algorithm like gradient descent.
+
+ANNs offer significant advantages, including flexibility in modeling complex relationships and the ability to scale for large datasets and intricate tasks. Their ability to learn and generalize from data makes them powerful tools in various applications, driving advancements in fields ranging from technology and finance to healthcare and beyond.
+
+### Model Workflow
+
+```{r ann-load-data}
+
+library(tidymodels)
+
+# Load the data already computed in the index.qmd file.
+data_split <- readRDS(here::here('data/data_split.rds'))
+data_cross_val <- readRDS(here::here('data/data_cross_val.rds'))
+test_outcome <- readRDS(here::here('data/test_outcome.rds'))
+data_rec <- readRDS(here::here('data/data_rec.rds'))
+
+# Set random seed.
+set.seed(3145)
+
+```
+
+Let us start by specifying the ANN model and creating the model workflow. Specifically, we will define a multilayer perceptron model (i.e., a single-layer, feed-forward neural network). The key parameters we will set include the number of epochs (or training iterations), the number of hidden units, the penalty (or weight decay), and the learning rate.
+
+```{r ann-workflow, echo=TRUE, cache=TRUE}
+
+# Create model specification.
+ann_model_spec <-
+  parsnip::mlp(
+    epochs = tune::tune(),
+    hidden_units = tune::tune(),
+    penalty = tune::tune(),
+    learn_rate = 0.1
+  ) |>
+  parsnip::set_engine('nnet') |>
+  parsnip::set_mode('classification')
+
+# Create model workflow.
+ann_workflow <- workflows::workflow() |>
+  workflows::add_model(ann_model_spec) |>
+  workflows::add_recipe(data_rec)
+
+```
+
+
+### Model Tuning and Fitting
+
+We will proceed to tune all the parameters except for the learning rate. This is because the `nnet` package does not support tuning the learning rate.
+
+```{r ann-param-tunning, echo=TRUE, cache=TRUE}
+
+#' Check number of available cores.
+cores_no <- parallel::detectCores() - 1
+
+#' Start timer.
+tictoc::tic()
+
+# Create and register clusters.
+clusters <- parallel::makeCluster(cores_no)
+doParallel::registerDoParallel(clusters)
+
+# Fine-tune the model params.
+ann_res <- tune::tune_grid(
+  object = ann_workflow,
+  resamples = data_cross_val,
+  control = tune::control_resamples(save_pred = TRUE)
+)
+
+# Select the best fit based on accuracy.
+ann_best_fit <- 
+  ann_res |> 
+  tune::select_best(metric = 'accuracy')
+
+# Finalize the workflow with the best parameters.
+ann_final_workflow <- 
+  ann_workflow |>
+  tune::finalize_workflow(ann_best_fit)
+
+# Fit the final model using the best parameters.
+ann_final_fit <- 
+  ann_final_workflow |> 
+  tune::last_fit(data_split)
+
+# Stop clusters.
+parallel::stopCluster(clusters)
+
+# Stop timer.
+tictoc::toc()
+
+```
+
+### Model Performance
+
+We then apply our selected model to the test set. The final metrics are given in `r ifelse(knitr::is_html_output(), '@tbl-ann-performance-html', '@tbl-ann-performance-pdf')`.
+
+```{r ann-pred, echo=TRUE}
+
+# Use the best fit to make predictions on the test data.
+ann_pred <- 
+  ann_final_fit |> 
+  tune::collect_predictions() |>
+  dplyr::mutate(truth = factor(.pred_class))
+
+```
+
+
+```{r ann-metrics-tbl}
+
+# Create metrics table.
+ann_metrics_table <- list(
+  'Accuracy' = yardstick::accuracy_vec(truth = ann_pred[['.pred_class']],
+                                       estimate = test_outcome),
+  'Precision' = yardstick::precision_vec(truth = ann_pred[['.pred_class']],
+                                         estimate = test_outcome),
+  'Recall' = yardstick::recall_vec(truth = ann_pred[['.pred_class']],
+                                   estimate = test_outcome),
+  'Specificity' = yardstick::specificity_vec(truth = ann_pred[['.pred_class']],
+                                            estimate = test_outcome)
+) |>
+  dplyr::bind_cols() |>
+  tidyr::pivot_longer(cols = dplyr::everything(), names_to = 'Metric', values_to = 'Value') |>
+  dplyr::mutate(Value = round(Value*100, 1))
+
+readr::write_csv(x = ann_metrics_table, file = here::here('data', 'ann-metrics.csv'))
+
+```
+
+
+::: {.content-visible when-format="html"}
+```{r include=knitr::is_html_output()}
+#| label: tbl-ann-performance-html
+#| tbl-cap: "ANN Performance Metrics: Accuracy, Precision, Recall, and Specificity."
+#| tbl-alt: "ANN Performance Metrics: Accuracy, Precision, Recall, and Specificity."
+
+# Prepare table's theme.
+theme <- reactable::reactableTheme(
+  borderColor = "#dfe2e5",
+  stripedColor = "#f6f8fa",
+  highlightColor = "#f0f5f9",
+  cellPadding = "8px 12px"
+)
+ann_metrics_table |>
+  dplyr::mutate(Value = paste0(Value, '%')) |>
+  reactable::reactable(
+    searchable = FALSE,
+    resizable = TRUE,
+    onClick = "expand",
+    bordered = TRUE,
+    highlight = TRUE,
+    compact = TRUE,
+    height = "auto",
+    theme = theme
+  )
+```
+:::
+
+::: {.content-visible when-format="pdf"}
+```{r include=knitr::is_latex_output()}
+#| label: tbl-ann-performance-pdf
+#| tbl-cap: "ANN Performance Metrics: Accuracy, Precision, Recall, and Specificity."
+#| tbl-alt: "ANN Performance Metrics: Accuracy, Precision, Recall, and Specificity."
+
+gt::gt(ann_metrics_table) |>
+  gt::tab_style(
+    style = list(gt::cell_fill(color = "white")),
+    locations = gt::cells_body(gt::everything())
+  ) |>
+  gt::cols_width(gt::everything() ~ gt::pct(50))
+
+```
+:::

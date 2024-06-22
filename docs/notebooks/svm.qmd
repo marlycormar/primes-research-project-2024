@@ -1,0 +1,178 @@
+## Support Vector Machine
+
+### Model Description
+
+Support Vector Machines (SVM) are powerful supervised learning algorithms used for both classification and regression tasks. For classification, SVM works by finding the hyperplane that best separates data points of different classes in a high-dimensional space. The optimal hyperplane is determined by maximizing the margin between the closest points of the classes, known as support vectors.
+
+SVM is particularly effective in high-dimensional spaces and is useful when the number of dimensions exceeds the number of samples. It can employ various kernel functions—such as linear, polynomial, and radial basis function (RBF)—to handle non-linear classification by mapping input features into higher-dimensional spaces.
+
+The most commonly used kernel in SVM is the Radial Basis Function (RBF) kernel, also known as the Gaussian kernel. The RBF kernel maps input features into an infinite-dimensional space, allowing SVM to create complex decision boundaries. The RBF kernel function is defined as:
+
+$$K(X_i, X_j) = e^{- \frac{|| X_i - X_j ||^2}{2 \sigma^2}}$$
+where $X_i$ and $X_j$ are the input feature vectors, and $\sigma$ is a parameter that determines the spread of the kernel and controls the influence of individual training samples.
+
+### Model Workflow
+
+```{r svm-load-data}
+
+# Load the data already computed in the index.qmd file.
+data_split <- readRDS(here::here('data/data_split.rds'))
+data_cross_val <- readRDS(here::here('data/data_cross_val.rds'))
+test_outcome <- readRDS(here::here('data/test_outcome.rds'))
+data_rec <- readRDS(here::here('data/data_rec.rds'))
+
+# Set random seed.
+set.seed(3145)
+
+```
+
+We will create an SVM model specification and workflow, indicating the model hyperparameters $\sigma$ (or `rbf_sigma`) and `cost`. The `rbf_sigma` parameter controls the influence of individual training examples, while the `cost` parameter controls the trade-off between achieving a low training error and a low testing error, which affects the model's ability to generalize. To optimize our model, we will use the `tune::tune()` function to find the optimal values of these parameters in terms of model accuracy.
+
+
+```{r svm-workflow, echo=TRUE}
+
+# Create model specification.
+svm_model_spec <-
+  parsnip::svm_rbf(
+    cost = tune::tune(),
+    rbf_sigma = tune::tune()
+  ) |>
+  parsnip::set_engine('kernlab') |>
+  parsnip::set_mode('classification')
+
+# Create model workflow.
+svm_workflow <- workflows::workflow() |>
+  workflows::add_model(svm_model_spec) |>
+  workflows::add_recipe(data_rec)
+
+```
+
+
+### Model Tuning and Fitting
+
+As we did for KNN, we use parallel computing to fine-tuning our model using the $10$-fold cross-validation we set up earlier. We end this section by selecting the best model based on accuracy.
+
+
+```{r svm-param-tunning, echo=TRUE}
+
+#' Check number of available cores.
+cores_no <- parallel::detectCores() - 1
+
+#' Start timer.
+tictoc::tic()
+
+# Create and register clusters.
+clusters <- parallel::makeCluster(cores_no)
+doParallel::registerDoParallel(clusters)
+
+# Fine-tune the model params.
+svm_res <- tune::tune_grid(
+  object = svm_workflow,
+  resamples = data_cross_val,
+  control = tune::control_resamples(save_pred = TRUE)
+)
+
+# Select the best fit based on accuracy.
+svm_best_fit <- 
+  svm_res |> 
+  tune::select_best(metric = 'accuracy')
+
+# Finalize the workflow with the best parameters.
+svm_final_workflow <- 
+  svm_workflow |>
+  tune::finalize_workflow(svm_best_fit)
+
+# Fit the final model using the best parameters.
+svm_final_fit <- 
+  svm_final_workflow |> 
+  tune::last_fit(data_split)
+
+# Stop clusters.
+parallel::stopCluster(clusters)
+
+# Stop timer.
+tictoc::toc()
+
+```
+
+### Model Performance
+
+We then apply our selected model to the test set. The final metrics are given in `r ifelse(knitr::is_html_output(), '@tbl-svm-performance-html', '@tbl-svm-performance-pdf')`.
+
+```{r svm-performance, echo=TRUE}
+
+# Use the best fit to make predictions on the test data.
+svm_pred <- 
+  svm_final_fit |> 
+  tune::collect_predictions() |>
+  dplyr::mutate(truth = factor(.pred_class))
+
+```
+
+
+```{r svm-metrics-tbl}
+
+# Create metrics table.
+svm_metrics_table <- list(
+  'Accuracy' = yardstick::accuracy_vec(truth = svm_pred[['.pred_class']],
+                                       estimate = test_outcome),
+  'Precision' = yardstick::precision_vec(truth = svm_pred[['.pred_class']],
+                                         estimate = test_outcome),
+  'Recall' = yardstick::recall_vec(truth = svm_pred[['.pred_class']],
+                                   estimate = test_outcome),
+  'Specificity' = yardstick::specificity_vec(truth = svm_pred[['.pred_class']],
+                                            estimate = test_outcome)
+) |>
+  dplyr::bind_cols() |>
+  tidyr::pivot_longer(cols = dplyr::everything(), names_to = 'Metric', values_to = 'Value') |>
+  dplyr::mutate(Value = round(Value*100, 1))
+
+readr::write_csv(x = svm_metrics_table, file = here::here('data', 'svm-metrics.csv'))
+
+```
+
+
+::: {.content-visible when-format="html"}
+```{r include=knitr::is_html_output()}
+#| label: tbl-svm-performance-html
+#| tbl-cap: 'SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+#| tbl-alt: 'SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+
+# Prepare table's theme.
+theme <- reactable::reactableTheme(
+  borderColor = "#dfe2e5",
+  stripedColor = "#f6f8fa",
+  highlightColor = "#f0f5f9",
+  cellPadding = "8px 12px"
+)
+
+svm_metrics_table |>
+  dplyr::mutate(Value = paste0(Value, '%')) |>
+  reactable::reactable(
+    searchable = FALSE,
+    resizable = TRUE,
+    onClick = "expand",
+    bordered = TRUE,
+    highlight = TRUE,
+    compact = TRUE,
+    height = "auto",
+    theme = theme
+  )
+```
+:::
+
+::: {.content-visible when-format="pdf"}
+```{r include=knitr::is_latex_output()}
+#| label: tbl-svm-performance-pdf
+#| tbl-cap: 'SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+#| tbl-alt: 'SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+
+gt::gt(svm_metrics_table) |>
+  gt::tab_style(
+    style = list(gt::cell_fill(color = "white")),
+    locations = gt::cells_body(gt::everything())
+  ) |>
+  gt::cols_width(gt::everything() ~ gt::pct(50))
+
+```
+:::
