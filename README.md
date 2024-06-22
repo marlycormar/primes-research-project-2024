@@ -15,8 +15,6 @@
 - May 31: Research period ends.
 - June 15: Interim research report due.
 
-### Generating the `.tex` File
-
 ### Repository Workflow Guidelines
 
 To maintain an organized workflow within our repository, please adhere
@@ -48,7 +46,7 @@ to the following guidelines:
     - Adjust the timeline if needed, ensuring to communicate these
       changes with the team.
 
-### Additional Resources
+#### Additional Resources
 
 - [Creating Pull
   Requests](https://help.github.com/en/articles/creating-a-pull-request)

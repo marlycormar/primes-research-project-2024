@@ -25,8 +25,6 @@ knitr::opts_chunk$set(
 - May 31: Research period ends.
 - June 15: Interim research report due.
 
-### Generating the `.tex` File
-
 ### Repository Workflow Guidelines
 
 To maintain an organized workflow within our repository, please adhere to the following guidelines:
