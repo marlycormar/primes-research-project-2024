@@ -48,37 +48,19 @@ rf_workflow <- workflows::workflow() |>
 
 ```
 
-```{r rf-workflow, echo=TRUE}
-
-# Create model specification.
-rf_model_spec2 <- 
-  parsnip::rand_forest(
-    trees = tune::tune(),
-    min_n = tune::tune()
-  ) |>
-  parsnip::set_engine('ranger') |>
-  parsnip::set_mode('classification')
-
-# Create model workflow.
-rf_workflow2 <- workflows::workflow() |>
-  workflows::add_model(rf_model_spec2) |>
-  workflows::add_recipe(data_rec)
-
-```
-
 ### Model Tuning and Fitting
 
 ```{r rf-param-tunning, echo=TRUE}
 
 #' Check number of available cores.
-#' cores_no <- parallel::detectCores() - 1
+cores_no <- parallel::detectCores() - 1
 
 #' Start timer.
 tictoc::tic()
 
 # Create and register clusters.
-#' clusters <- parallel::makeCluster(cores_no)
-#' doParallel::registerDoParallel(clusters)
+clusters <- parallel::makeCluster(cores_no)
+doParallel::registerDoParallel(clusters)
 
 # Fine-tune the model params.
 rf_res <- tune::tune_grid(
@@ -103,55 +85,13 @@ rf_final_fit <-
   tune::last_fit(data_split)
 
 # Stop clusters.
-#' parallel::stopCluster(clusters)
+parallel::stopCluster(clusters)
 
 # Stop timer.
 tictoc::toc()
 
 ```
 
-
-```{r rf-param-tunning, echo=TRUE}
-
-#' Check number of available cores.
-#' cores_no <- parallel::detectCores() - 1
-
-#' Start timer.
-tictoc::tic()
-
-# Create and register clusters.
-#' clusters <- parallel::makeCluster(cores_no)
-#' doParallel::registerDoParallel(clusters)
-
-# Fine-tune the model params.
-rf_res2 <- tune::tune_grid(
-  object = rf_workflow2,
-  resamples = data_cross_val,
-  control = tune::control_resamples(save_pred = TRUE)
-)
-
-# Select the best fit based on accuracy.
-rf_best_fit2 <- 
-  rf_res2 |> 
-  tune::select_best(metric = 'accuracy')
-
-# Finalize the workflow with the best parameters.
-rf_final_workflow2 <- 
-  rf_workflow2 |>
-  tune::finalize_workflow(rf_best_fit2)
-
-# Fit the final model using the best parameters.
-rf_final_fit2 <- 
-  rf_final_workflow2 |> 
-  tune::last_fit(data_split)
-
-# Stop clusters.
-#' parallel::stopCluster(clusters)
-
-# Stop timer.
-tictoc::toc()
-
-```
 ### Model Performance
 
 We then apply our selected model to the test set. The final metrics are given in `r ifelse(knitr::is_html_output(), '@tbl-rf-performance-html', '@tbl-rf-performance-pdf')`.

@@ -76,14 +76,14 @@ As we did for KNN, we use parallel computing to fine-tuning our model using the 
 ```{r svm-param-tunning, echo=TRUE}
 
 #' Check number of available cores.
-#' cores_no <- parallel::detectCores() - 1
+cores_no <- parallel::detectCores() - 1
 
 #' Start timer.
 tictoc::tic()
 
 # Create and register clusters.
-#' clusters <- parallel::makeCluster(cores_no)
-#' doParallel::registerDoParallel(clusters)
+clusters <- parallel::makeCluster(cores_no)
+doParallel::registerDoParallel(clusters)
 
 # Fine-tune the model params.
 svm_res <- tune::tune_grid(
@@ -108,7 +108,7 @@ svm_final_fit <-
   tune::last_fit(data_split)
 
 # Stop clusters.
-#' parallel::stopCluster(clusters)
+parallel::stopCluster(clusters)
 
 # Stop timer.
 tictoc::toc()
@@ -119,14 +119,14 @@ We similarly tune the SVM that was based on the polynomial kernel.
 ```{r svm-param-tunning-poly, echo=TRUE}
 
 #' Check number of available cores.
-#' cores_no <- parallel::detectCores() - 1
+cores_no <- parallel::detectCores() - 1
 
 #' Start timer.
 tictoc::tic()
 
 # Create and register clusters.
-#' clusters <- parallel::makeCluster(cores_no)
-#' doParallel::registerDoParallel(clusters)
+clusters <- parallel::makeCluster(cores_no)
+doParallel::registerDoParallel(clusters)
 
 # Fine-tune the model params.
 svm_res2 <- tune::tune_grid(
@@ -151,7 +151,7 @@ svm_final_fit2 <-
   tune::last_fit(data_split)
 
 # Stop clusters.
-#' parallel::stopCluster(clusters)
+parallel::stopCluster(clusters)
 
 # Stop timer.
 tictoc::toc()
