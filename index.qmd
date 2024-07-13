@@ -53,6 +53,8 @@ csl: bib-format/institute-of-mathematical-statistics.csl
 <!-- EDA --->
 {{< include notebooks/eda.qmd >}}
 
+<!-- Feature Selection --->
+{{< include notebooks/feature-selection.qmd >}}
 
 <!----------------------------------------------------------------------------->
 <!--------------------------------- ## MODELS --------------------------------->

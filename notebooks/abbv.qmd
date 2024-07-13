@@ -12,3 +12,5 @@ The following abbreviations are used in this manuscript:
 - XGBoost: Extreme Gradient Boosting
 - DTC: Differentiated Thyroid Cancer
 - ML: Machine Learning
+- PCA: Principal Components Analysis
+- FAMD: Factor Analysis of Mixed Data
