@@ -9,7 +9,7 @@ author:
     email: ekam2466@gmail.com
   - name: Susie Lu
     affiliations: MIT PRIMES
-    email: S2010Lu@gmail.com
+    email: SusieLu@ohs.stanford.edu
 keywords:
   - Cancer Research
   - Machine Learning
