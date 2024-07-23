@@ -128,6 +128,33 @@ To assess model performance, we will compare the accuracy, precision, recall, an
 
 - Specificity: proportion of correctly classified negative observations among all actual negative observations or $\frac{TN}{TN + FP}$.
 
+```{r}
+model_perf <-
+  dplyr::bind_rows(
+    readr::read_csv('data/knn-pred.csv') |>
+    readr::read_csv('data/lr-pred.csv') 
+  )
+      
+```
+
+```{r}
+models_performance <-
+  dplyr::bind_rows(
+    readr::read_csv('data/knn-metrics.csv') |>
+      dplyr::mutate('Model' = 'KNN', .before = 1),
+    readr::read_csv('data/svm-metrics.csv') |>
+      dplyr::mutate('Model' = 'SVM', .before = 1),
+    readr::read_csv('data/ann-metrics.csv') |>
+      dplyr::mutate('Model' = 'ANN', .before = 1),
+    readr::read_csv('data/lr-metrics.csv') |>
+      dplyr::mutate('Model' = 'Logistic Regression', .before = 1),
+    readr::read_csv('data/xgboost-metrics.csv') |>
+      dplyr::mutate('Model' = 'XGBoost', .before = 1),
+    readr::read_csv('data/rf-metrics.csv') |>
+      dplyr::mutate('Model' = 'Random Forest', .before = 1)
+  ) 
+models_performance
+```
 
 ```{r model-comparison}
 models_performance <-

@@ -1,0 +1,105 @@
+## Comparing Model Performances
+
+### Correlation Matrix
+First we compare how different the predictions of the models are on each test observation. Particularly, we look at the correlation heatmap between the models, which computes the correlation between the prediction vectors of every pair of models.
+
+```{r message = FALSE, warning = FALSE}
+total_pred = bind_cols(knn_pred[".pred_class"], svm_pred[".pred_class"], ann_pred[".pred_class"], lr_pred[".pred_class"], rf_pred[".pred_class"], xgboost_pred[".pred_class"]) |>
+  rename(KNN = .pred_class...1, SVM = .pred_class...2, ANN = .pred_class...3, LR = .pred_class...4, RF = .pred_class...5, XGBoost = .pred_class...6) |>
+  dplyr::mutate_if(is.factor, as.numeric)
+
+ggcorrplot::ggcorrplot(cor(total_pred), lab = TRUE, type = "lower") +
+  ggtitle("Correlation Heatmap of Model Predicitons")
+```
+Notice how the correlation between the SVM predictions and the rest of the models is much lower than the other correlations. This suggests that SVM predicts DTC in a quite different manner than the rest of the models.
+
+### Bayesian Analysis of Model Performances
+Now as a general question, we may ask how the different models really compare and whether the best performing model is actually the best. For this task, we use the resampling results during the tuning of the data which serves as an approximation of model performance. Precisely, we look at the cross validation performance metrics of each model and compare them in a Bayesian manner. While not the same as test performance, we expect the resampling metrics to approximate the metrics on the test data.
+
+Bayesian model comparison has its advantage that we can make more intuitive and practical inferences than frequentist analysis. Mathematically, how the Bayesian model comparison works is as follows. We use a Bayesian ANOVA model to generate distributions of the metric estimate for each model. 
+
+
+A normal ANOVA model (written as a linear regression) for comparing models would be as follows:
+\[y = \beta_0 + \beta_1 m_1 + \dots \beta_km_k,\]
+where the $y$ denotes the metric to be predicted and the $m_j$ serve as indicator variables for each model. The $\beta_0$ denotes the metric estimate for the base model, and the rest of the $\beta_i$ denote the difference in metric estimate of model $i$ and the base reference model. We are trying to predict whether any of the $\beta_i$ are 0. (It doesn't matter which model we pick as the base model.) 
+
+It turns out that since each resample can have its own characteristics (termed as resample-to-resample effects), the metrics outputs are often dependent on the resample. Hence, we the model equation is instead
+\[y = \beta_{i0} + \beta_1 m_1 + \dots \beta_km_k.\]
+Note that we do not have the rest of the $\beta_j$ dependent on the specific resample. This turns out to be a reasonable assumption since we expect the difference in metric estimates (compared to the base model) across all resamples to have the same model coefficients. (In other words, we expect the regression lines to be roughly parallel).
+
+Now in the Bayesian case, the parameters $\beta_i$ all have a prior distribution, which represent our prior beliefs about them before processing any model results. In this case, we just use the default uninformative priors. Then as the data is processed in, the distribution on these parameters is adjusted according to likelihood estimates -- and finally we get the new posterior distribution of each parameter. All of this is conveniently handled by functions in the `tidyposterior` library.
+
+To formally compare the posterior distributions of each parameter, we look at the distribution of differences. We then look at the ROPE (Region of Practical Significance) estimate, which represents the probability that the two models are practically the same. This is done by computing the probability that the difference of metric estimates is within some fixed threshhold, often set to 0.02.
+
+For the comparison of models here, we use the accuracy metric. The code is as follows. 
+
+```{r, warning = FALSE, echo = FALSE}
+# gather all the resample results into a tibble
+model_cv = tibble(model = list(lr_res, knn_res, svm_res, rf_res, ann_res, xgboost_res), model_name = c("logistic", "knn", "svm", "rf", "ann", "xgb"))
+
+# function for unnesting the individual metrics from each fold
+map_metrics = function (model){
+  model |>
+    select(id, .metrics) |>
+    unnest()
+}
+
+# apply the function above and unnest each model
+model_cv = model_cv |>
+  mutate(res = map(model, map_metrics)) |>
+  select(model_name, res) |>
+  unnest(res)
+
+model_pos = model_cv |>
+  filter(.metric == "accuracy") |>
+  select(model_name, id, .estimate) |>
+  pivot_wider(names_from = "model_name", values_from = .estimate)
+
+model_pos = model_pos |>
+  select(id, knn, logistic, svm, rf, ann, xgb) |>
+  unnest()
+
+model_comp = perf_mod(model_pos, iter = 2000, chains = 5, seed = 3145)
+```
+
+Here is a graph comparing the accuracies for each model per resampling fold.
+```{r}
+model_cv |>
+  filter(.metric == "accuracy") |>
+  ggplot(aes(x = model_name, y = .estimate, color = id, group = id)) +
+  geom_line() +
+  facet_wrap(~.metric, scales = "free_y", ncol = 1)
+```
+Ideally, these lines should be parallel. While this is not the case here, the lines do appear to have a similar trend.
+Next, here is the density plot of the accuracy estimates of each model. As we see, the Random Forest model does appear superior for this metric, having a higher concentrated density.
+```{r}
+model_cv |>
+  filter(.metric == "accuracy") |>
+  ggplot(aes(x = .estimate, color = model_name, fill = model_name)) +
+  geom_density(alpha = 0.1) +
+  facet_wrap(~.metric, scales = "free_y", ncol = 1)
+```
+
+Finally, here are the posterior distributions for the accuracy of each model.
+```{r}
+model_comp |>
+  tidy() %>% 
+  ggplot(aes(x = posterior)) + 
+  geom_histogram(bins = 40, col = "blue", fill = "blue", alpha = .4) + 
+  facet_wrap(~ model, ncol = 1) + 
+  xlab("Accuracy Score Posterior Distribution")
+```
+ 
+```{r}
+autoplot(model_comp)
+```
+The Random Forest model appears to have the highest accuracy, though ANN appears a close second.
+
+Finally, here are ROPE measures of each pairwise model comparison where we use a practical effect size of 0.02 (ie. the probability that the difference in acccuracy of two models is at most 0.02).
+```{r}
+model_cont = contrast_models(model_comp, seed = 3145)
+summary(model_cont, size = 0.02) |>
+  select(contrast, starts_with("pract"))
+```
+
+In the ROPE values frame, we see that the Random Forest is much better than the KNN, LR, XGB, and SVM models -- although the performance lies in the practical equivalence region in comparison to the ANN model.
