@@ -33,6 +33,273 @@ To formally compare the posterior distributions of each parameter, we look at th
 
 For the comparison of models here, we use the accuracy metric. The code is as follows. 
 
+```{r load-data, include = FALSE}
+
+# Load the data already computed in the index.qmd file.
+data_split <- readRDS(here::here('data/data_split.rds'))
+data_cross_val <- readRDS(here::here('data/data_cross_val.rds'))
+test_outcome <- readRDS(here::here('data/test_outcome.rds'))
+data_rec <- readRDS(here::here('data/data_rec.rds'))
+
+# Set random seed.
+set.seed(3145)
+
+```
+
+```{r include = FALSE}
+# Run KNN model code to get the resampling data
+
+# Create model specification.
+knn_model_spec <-
+  parsnip::nearest_neighbor(
+    neighbors = tune::tune(),
+    dist_power = tune::tune(),
+    weight_func = tune::tune()
+  ) |>
+  parsnip::set_mode('classification') |>
+  parsnip::set_engine('kknn')
+
+# Create model workflow.
+knn_workflow <- workflows::workflow() |>
+  workflows::add_model(knn_model_spec) |>
+  workflows::add_recipe(data_rec)
+
+#' Check number of available cores.
+cores_no <- parallel::detectCores() - 1
+
+#' Start timer.
+tictoc::tic()
+
+# Create and register clusters.
+clusters <- parallel::makeCluster(cores_no)
+doParallel::registerDoParallel(clusters)
+
+# Fine-tune the model params.
+knn_res <- tune::tune_grid(
+  object = knn_workflow,
+  resamples = data_cross_val,
+  control = tune::control_resamples(save_pred = TRUE)
+)
+
+# Stop clusters.
+parallel::stopCluster(clusters)
+
+# Stop timer.
+tictoc::toc()
+```
+
+```{r include = FALSE}
+# Run SVM model to get remapling data
+
+# Create model specification.
+svm_model_spec <-
+  parsnip::svm_rbf(
+    cost = tune::tune(),
+    rbf_sigma = tune::tune()
+  ) |>
+  parsnip::set_engine('kernlab') |>
+  parsnip::set_mode('classification')
+
+# Create model workflow.
+svm_workflow <- workflows::workflow() |>
+  workflows::add_model(svm_model_spec) |>
+  workflows::add_recipe(data_rec)
+
+#' Check number of available cores.
+cores_no <- parallel::detectCores() - 1
+
+#' Start timer.
+tictoc::tic()
+
+# Create and register clusters.
+clusters <- parallel::makeCluster(cores_no)
+doParallel::registerDoParallel(clusters)
+
+# Fine-tune the model params.
+svm_res <- tune::tune_grid(
+  object = svm_workflow,
+  resamples = data_cross_val,
+  control = tune::control_resamples(save_pred = TRUE)
+)
+
+# Stop clusters.
+parallel::stopCluster(clusters)
+
+# Stop timer.
+tictoc::toc()
+```
+
+```{r include = FALSE}
+# Run ANN model to get resampling data
+
+# Create model specification.
+ann_model_spec <-
+  parsnip::mlp(
+    epochs = tune::tune(),
+    hidden_units = tune::tune(),
+    penalty = tune::tune(),
+    learn_rate = 0.1
+  ) |>
+  parsnip::set_engine('nnet') |>
+  parsnip::set_mode('classification')
+
+# Create model workflow.
+ann_workflow <- workflows::workflow() |>
+  workflows::add_model(ann_model_spec) |>
+  workflows::add_recipe(data_rec)
+
+#' Check number of available cores.
+cores_no <- parallel::detectCores() - 1
+
+#' Start timer.
+tictoc::tic()
+
+# Create and register clusters.
+clusters <- parallel::makeCluster(cores_no)
+doParallel::registerDoParallel(clusters)
+
+# Fine-tune the model params.
+ann_res <- tune::tune_grid(
+  object = ann_workflow,
+  resamples = data_cross_val,
+  control = tune::control_resamples(save_pred = TRUE)
+)
+
+# Stop clusters.
+parallel::stopCluster(clusters)
+
+# Stop timer.
+tictoc::toc()
+```
+
+```{r include = FALSE}
+# Run LR model to get resampling data
+
+# Create model specification.
+lr_model_spec <-
+  parsnip::logistic_reg(
+    penalty = tune(),
+    mixture = 1) |>
+  parsnip::set_mode('classification') |>
+  parsnip::set_engine('glmnet')
+
+# Create model workflow.
+lr_workflow <- workflows::workflow() |>
+  workflows::add_model(lr_model_spec) |>
+  workflows::add_recipe(data_rec)
+
+#' Check number of available cores.
+cores_no <- parallel::detectCores() - 1
+
+#' Start timer.
+tictoc::tic()
+
+# Create and register clusters.
+clusters <- parallel::makeCluster(cores_no)
+doParallel::registerDoParallel(clusters)
+
+# Fine-tune the model params.
+lr_res <- tune::tune_grid(
+  object = lr_workflow,
+  resamples = data_cross_val,
+  control = tune::control_resamples(save_pred = TRUE)
+)
+
+# Stop clusters.
+parallel::stopCluster(clusters)
+
+# Stop timer.
+tictoc::toc()
+```
+
+```{r include = FALSE}
+# Run RF model to get resampling data
+
+# Create model specification.
+rf_model_spec <- 
+  parsnip::rand_forest(
+    trees = 500,
+    min_n = tune::tune()
+  ) |>
+  parsnip::set_engine('ranger') |>
+  parsnip::set_mode('classification')
+
+# Create model workflow.
+rf_workflow <- workflows::workflow() |>
+  workflows::add_model(rf_model_spec) |>
+  workflows::add_recipe(data_rec)
+
+#' Check number of available cores.
+cores_no <- parallel::detectCores() - 1
+
+#' Start timer.
+tictoc::tic()
+
+# Create and register clusters.
+clusters <- parallel::makeCluster(cores_no)
+doParallel::registerDoParallel(clusters)
+
+# Fine-tune the model params.
+rf_res <- tune::tune_grid(
+  object = rf_workflow,
+  resamples = data_cross_val,
+  control = tune::control_resamples(save_pred = TRUE)
+)
+
+# Stop clusters.
+parallel::stopCluster(clusters)
+
+# Stop timer.
+tictoc::toc()
+```
+
+```{r include = FALSE}
+# Run XGBoost model to get resampling data
+
+# Create model specification.
+xgboost_model_spec <- 
+  boost_tree(
+    trees = 1000,
+    tree_depth = tune(), 
+    min_n = tune(),
+    loss_reduction = tune(),
+    sample_size = tune(), 
+    mtry = tune(),
+    learn_rate = tune()
+  ) |>
+  set_engine('xgboost') |>
+  set_mode('classification')
+
+# Create model workflow.
+xgboost_workflow <- workflows::workflow() |>
+  workflows::add_model(xgboost_model_spec) |>
+  workflows::add_recipe(data_rec)
+
+#' Check number of available cores.
+cores_no <- parallel::detectCores() - 1
+
+#' Start timer.
+tictoc::tic()
+
+# Create and register clusters.
+clusters <- parallel::makeCluster(cores_no)
+doParallel::registerDoParallel(clusters)
+
+# Fine-tune the model params.
+xgboost_res <- tune::tune_grid(
+  object = xgboost_workflow,
+  resamples = data_cross_val,
+  control = tune::control_resamples(save_pred = TRUE)
+)
+
+# Stop clusters.
+parallel::stopCluster(clusters)
+
+# Stop timer.
+tictoc::toc()
+```
+
+
 ```{r, warning = FALSE, echo = FALSE}
 # gather all the resample results into a tibble
 model_cv = tibble(model = list(lr_res, knn_res, svm_res, rf_res, ann_res, xgboost_res), model_name = c("logistic", "knn", "svm", "rf", "ann", "xgb"))
@@ -50,12 +317,11 @@ model_cv = model_cv |>
   select(model_name, res) |>
   unnest(res)
 
+# filter the metric to accuracy and convert the tibble into an appropriate form
 model_pos = model_cv |>
   filter(.metric == "accuracy") |>
   select(model_name, id, .estimate) |>
-  pivot_wider(names_from = "model_name", values_from = .estimate)
-
-model_pos = model_pos |>
+  pivot_wider(names_from = "model_name", values_from = .estimate) |>
   select(id, knn, logistic, svm, rf, ann, xgb) |>
   unnest()
 
