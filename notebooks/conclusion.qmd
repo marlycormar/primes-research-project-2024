@@ -10,6 +10,8 @@ The SVM model excelled in recall, achieving a perfect score of $100\%$. This ind
 
 Overall, while the Random Forest model provides the best balance of performance across all metrics, the SVM model's outstanding recall rate highlights its utility in scenarios where it is crucial to identify all positive cases. These results underscore the importance of selecting the appropriate model based on the specific needs of the task. For balanced performance and overall robustness, Random Forest is recommended. However, for applications where recall is paramount, SVM is the superior choice.
 
+Motivating the predictions of the Random Forest model using feature importance analysis shows that a structural incomplete response is by far the most important feature that aids in prediction of DTC. The next most important features are the `N1b` assessment and the risk assessments.
+
 Future work can explore the integration of these models in a hybrid approach, leveraging the strengths of each to further improve prediction accuracy and reliability. Additionally, investigating the impact of different feature engineering techniques and more sophisticated hyperparameter tuning methods may yield further enhancements in model performance. 
 
 These findings contribute valuable insights into the application of machine learning in medical diagnostics, particularly for predicting the recurrence of DTC, and pave the way for more personalized and accurate treatment strategies.

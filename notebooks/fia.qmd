@@ -1,0 +1,189 @@
+
+# Feature Importance Analysis
+
+Given that the Random Forest model had the best performance by several metrics, it is important to understand *why* the model produced the predictions that it did. This process is called feature importance analysis (FIA). FIA is also useful for
+
+- Model Improvement: By identifying the most impactful features, FIA helps one focus efforts on the data that truly matters.
+
+- Overfitting Detection: Features with surprisingly high importance might indicate overfitting. The model might be latching onto irrelevant details in the training data that won't generalize well to unseen data. FIA helps you identify such features and potentially adjust the model to reduce overfitting.
+
+### Impurity Importance
+
+Impurity importance, also known as Mean Decrease in Impurity (MDI) or Gini importance, measures the importance of a feature based on the total reduction of the criterion (impurity) brought by that feature. It is not very computationally expensive and gives an importance score for each feature as part of the tree-building process. However, it may be biased towards features with more categories or continuous features. The idea is the following: let our random forest consist of $T$ decision trees. For each tree $t$, we consider every node $j$ where a split is made on feature $f$. We need the impurity function $I$, which measures the quality of a split at a node. It quantifies how mixed the classes are (for classification tasks) or the variance within the node (for regression tasks). Lower impurity indicates purer nodes. We introduce the following variables:
+
+- $I(p(j))$ is the impurity of the parent node
+- $I(l(j))$ and $I(r(j))$ are the impurities of the left and right child nodes, respectively.
+- $w_{l(j)}$ and $w_{r(j)}$ are the proportions of samples in the left and right child nodes, respectively.
+
+We now calculate the decrease in impurity for the node $j$ as
+$$\Delta I_j=I(p(j))-[w_{l(j)}I(l(j))+w_{r(j)}I(r(j))].$$
+For each feature $f$, we sum the impurity decreases for all nodes where $f$ is used for splitting. Call the set of such nodes inside a tree $t$ as $n(t,f)$. We then normalize the sum. The result is the following:
+$$\mathrm{MDI}(f)=\frac{1}{T}\sum_{t=1}^T \sum_{j\in n(t,f)}\Delta I_j.$$
+This gives us our impurity importance.
+
+
+### Permutation Importance
+
+Permutation importance, also known as Mean Decrease in Accuracy (MDA), measures the importance of a feature by evaluating the decrease in the model's performance when the feature's values are randomly shuffled. It provides a more unbiased estimate of feature importance by directly assessing the impact of feature shuffling on model performance. It can be more computationally intensive since it requires model evaluation on permuted datasets. The idea is as follows: We let $M$ be the baseline performance metric, i.e. the model's performance on a validation set. Then, for each feature $f$, we create a permuted version of the validation set by randomly shuffling the values of $f$ while fixing the other feature values. We then evaluate the model's performance on this permuted set to get a new metric $M_f$. The permutation importance of a feature $f$ is then simply the decrease in performance metric:
+$$\mathrm{MDA}(f)=M-M_f.$$
+We will use accuracy for our performance metric. In this case, a higher MDA value indicates that the feature is more important (because permuting it significantly reduces the model's accuracy).
+
+### Analysis
+
+Let us first compute the impurity importance. In order to do this, we need to redefine our model, and essentially repeat the process that we performed earlier:
+
+```{r rf-load-data}
+
+library(tidymodels)
+library(vip)
+
+# Load the data already computed in the index.qmd file.
+data_split <- readRDS(here::here('data/data_split.rds'))
+data_cross_val <- readRDS(here::here('data/data_cross_val.rds'))
+test_outcome <- readRDS(here::here('data/test_outcome.rds'))
+data_rec <- readRDS(here::here('data/data_rec.rds'))
+
+# Set random seed.
+set.seed(3145)
+
+```
+
+```{r rf-workflow, echo=FALSE}
+
+# Create model specification.
+rf_model_spec <- 
+  parsnip::rand_forest(
+    trees = 500,
+    min_n = tune::tune()
+  ) |>
+  parsnip::set_engine('ranger', importance='impurity') |>
+  parsnip::set_mode('classification')
+
+# Create model workflow.
+rf_workflow <- workflows::workflow() |>
+  workflows::add_model(rf_model_spec) |>
+  workflows::add_recipe(data_rec)
+
+```
+
+```{r rf-param-tunning, echo=FALSE}
+
+#' Check number of available cores.
+cores_no <- parallel::detectCores() - 1
+
+#' Start timer.
+tictoc::tic()
+
+# Create and register clusters.
+clusters <- parallel::makeCluster(cores_no)
+doParallel::registerDoParallel(clusters)
+
+# Fine-tune the model params.
+rf_res <- tune::tune_grid(
+  object = rf_workflow,
+  resamples = data_cross_val,
+  control = tune::control_resamples(save_pred = TRUE)
+)
+
+# Select the best fit based on accuracy.
+rf_best_fit <- 
+  rf_res |> 
+  tune::select_best(metric = 'accuracy')
+
+# Finalize the workflow with the best parameters.
+rf_final_workflow <- 
+  rf_workflow |>
+  tune::finalize_workflow(rf_best_fit)
+
+# Fit the final model using the best parameters.
+rf_final_fit <- 
+  rf_final_workflow |> 
+  tune::last_fit(data_split)
+
+# Extract workflow from fitted model
+final_forest <- extract_workflow(rf_final_fit)
+
+# Create variable importance plot for workflow
+final_vip <- final_forest |> extract_fit_parsnip(final_forest) |> vip(num_features = 16)
+plot(final_vip)
+
+# Stop clusters.
+parallel::stopCluster(clusters)
+
+# Stop timer.
+tictoc::toc()
+
+```
+
+Now let us do the same for permutation importance.
+
+```{r rf-workflow2, echo=FALSE}
+
+# Create model specification.
+rf_model_spec <- 
+  parsnip::rand_forest(
+    trees = 500,
+    min_n = tune::tune()
+  ) |>
+  parsnip::set_engine('ranger', importance='permutation') |>
+  parsnip::set_mode('classification')
+
+# Create model workflow.
+rf_workflow <- workflows::workflow() |>
+  workflows::add_model(rf_model_spec) |>
+  workflows::add_recipe(data_rec)
+
+```
+
+```{r rf-param-tunning2, echo=FALSE}
+
+#' Check number of available cores.
+cores_no <- parallel::detectCores() - 1
+
+#' Start timer.
+tictoc::tic()
+
+# Create and register clusters.
+clusters <- parallel::makeCluster(cores_no)
+doParallel::registerDoParallel(clusters)
+
+# Fine-tune the model params.
+rf_res <- tune::tune_grid(
+  object = rf_workflow,
+  resamples = data_cross_val,
+  control = tune::control_resamples(save_pred = TRUE)
+)
+
+# Select the best fit based on accuracy.
+rf_best_fit <- 
+  rf_res |> 
+  tune::select_best(metric = 'accuracy')
+
+# Finalize the workflow with the best parameters.
+rf_final_workflow <- 
+  rf_workflow |>
+  tune::finalize_workflow(rf_best_fit)
+
+# Fit the final model using the best parameters.
+rf_final_fit <- 
+  rf_final_workflow |> 
+  tune::last_fit(data_split)
+
+# Extract workflow from fitted model
+final_forest <- extract_workflow(rf_final_fit)
+
+# Create variable importance plot for workflow
+final_vip <- final_forest |> extract_fit_parsnip(final_forest) |> vip(num_features = 16)
+plot(final_vip)
+
+# Stop clusters.
+parallel::stopCluster(clusters)
+
+# Stop timer.
+tictoc::toc()
+
+```
+
+### Results
+
+We notice a very interesting phenomenon, confirmed by both of the plots: the `Response_Structural.Incomplete` feature plays a much bigger part in the role of the prediction of our random forest model than any of the other features. Medically, this means that our model is eager to predict DTC when there is evidence of cancer cells upon imaging, but no detectable  thyroglobulin (a protein produced by the thyroid gland). Intuitively, this should indeed correspond to high risk of DTC. However, the nontrivial result that these plots uncover is that this feature is significantly more important than other important features identified in our EDA (e.g. the risk assessment). The next most important features seem to be the `N.N1b` feature and the risk assessment.
