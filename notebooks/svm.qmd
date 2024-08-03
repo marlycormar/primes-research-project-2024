@@ -198,8 +198,8 @@ readr::write_csv(x = svm_metrics_table, file = here::here('data', 'svm-metrics.c
 ::: {.content-visible when-format="html"}
 ```{r include=knitr::is_html_output()}
 #| label: tbl-svm-performance-html
-#| tbl-cap: 'SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
-#| tbl-alt: 'SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+#| tbl-cap: 'RBF SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+#| tbl-alt: 'RBF SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
 
 # Prepare table's theme.
 theme <- reactable::reactableTheme(
@@ -227,8 +227,8 @@ svm_metrics_table |>
 ::: {.content-visible when-format="pdf"}
 ```{r include=knitr::is_latex_output()}
 #| label: tbl-svm-performance-pdf
-#| tbl-cap: 'SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
-#| tbl-alt: 'SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+#| tbl-cap: 'RBF SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+#| tbl-alt: 'RBF SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
 
 gt::gt(svm_metrics_table) |>
   gt::tab_style(
@@ -242,8 +242,7 @@ gt::gt(svm_metrics_table) |>
 
 We also apply our selected SVM based on the polynomial kernel to the test set. The final metrics are given in `r ifelse(knitr::is_html_output(), '@tbl-svm-poly-performance-html', '@tbl-svm-poly-performance-pdf')`.
 
-```{r svm-performance, echo=TRUE}
-
+```{r svm-performance-poly, echo=TRUE}
 # Use the best fit to make predictions on the test data.
 svm_pred2 <- 
   svm_final_fit2 |> 
@@ -253,8 +252,7 @@ svm_pred2 <-
 ```
 
 
-```{r svm-metrics-tbl}
-
+```{r svm-metrics-tbl-poly}
 # Create metrics table.
 svm_metrics_table2 <- list(
   'Accuracy' = yardstick::accuracy_vec(truth = svm_pred2[['.pred_class']],
@@ -277,8 +275,8 @@ readr::write_csv(x = svm_metrics_table2, file = here::here('data', 'svm-poly-met
 ::: {.content-visible when-format="html"}
 ```{r include=knitr::is_html_output()}
 #| label: tbl-svm-poly-performance-html
-#| tbl-cap: 'SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
-#| tbl-alt: 'SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+#| tbl-cap: 'Polynomial SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+#| tbl-alt: 'Polynomial SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
 
 # Prepare table's theme.
 theme2 <- reactable::reactableTheme(
@@ -306,8 +304,8 @@ svm_metrics_table2 |>
 ::: {.content-visible when-format="pdf"}
 ```{r include=knitr::is_latex_output()}
 #| label: tbl-svm-poly-performance-pdf
-#| tbl-cap: 'SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
-#| tbl-alt: 'SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+#| tbl-cap: 'Polynomial SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+#| tbl-alt: 'Polynomial SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
 
 gt::gt(svm_metrics_table2) |>
   gt::tab_style(
