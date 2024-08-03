@@ -394,7 +394,7 @@ For the comparison of models here, we use the ROC-AUC metric (which is good at h
 
 ```{r, warning = FALSE, echo = FALSE}
 # gather all the resample results into a tibble
-model_cv = tibble(model = list(lr_res, knn_res, svm_res, rf_res, ann_res, xgboost_res), model_name = c("logistic", "knn", "svm", "rf", "ann", "xgb"))
+model_cv = tibble::tibble(model = list(lr_res, knn_res, svm_res, rf_res, ann_res, xgboost_res), model_name = c("logistic", "knn", "svm", "rf", "ann", "xgb"))
 
 # function for unnesting the individual metrics from each fold
 map_metrics = function (model){
@@ -423,33 +423,33 @@ model_comp = tidyposterior::perf_mod(model_pos, iter = 2000, chains = 5, seed = 
 Here is a graph comparing the ROC-AUC metrics for each model per resampling fold.
 ```{r}
 model_cv |>
-  filter(.metric == "roc_auc") |>
-  ggplot(aes(x = model_name, y = .estimate, color = id, group = id)) +
-  geom_line() +
-  facet_wrap(~.metric, scales = "free_y", ncol = 1)
+  dplyr::filter(.metric == "roc_auc") |>
+  ggplot2::ggplot(aes(x = model_name, y = .estimate, color = id, group = id)) +
+  ggplot2::geom_line() +
+  ggplot2::facet_wrap(~.metric, scales = "free_y", ncol = 1)
 ```
 Ideally, these lines should be parallel. While this is not the case here, the lines do appear to have a similar trend.
 
 Next, here are the actual posterior distributions for the ROC-AUC metric of each model.
 ```{r}
 model_comp |>
-  tidy() %>% 
-  ggplot(aes(x = posterior)) + 
-  geom_histogram(bins = 40, col = "blue", fill = "blue", alpha = .4) + 
-  facet_wrap(~ model, ncol = 1) + 
-  xlab("ROC-AUC Score Posterior Distribution")
+  broom::tidy() %>% 
+  ggplot2::ggplot(aes(x = posterior)) + 
+  ggplot2::geom_histogram(bins = 40, col = "blue", fill = "blue", alpha = .4) + 
+  ggplot2::facet_wrap(~ model, ncol = 1) + 
+  ggplot2::xlab("ROC-AUC Score Posterior Distribution")
 ```
  
 ```{r}
-autoplot(model_comp)
+ggplot2::autoplot(model_comp)
 ```
 As we see, the Random Forest model appears to have the highest ROC-AUC metric, though ANN and SVM both appear close seconds.
 
 Precisely, here are ROPE measures of each pairwise model comparison where we use a practical effect size of 0.02 (ie. the probability that the difference in ROC-AUC of two models is at most 0.02).
 ```{r}
-model_cont = contrast_models(model_comp, seed = 3145)
+model_cont = tidyposterior::contrast_models(model_comp, seed = 3145)
 summary(model_cont, size = 0.02) |>
-  select(contrast, starts_with("pract"))
+  dplyr::select(contrast, starts_with("pract")) 
 ```
 
 In the ROPE values frame, we see that the Random Forest appears much better than the KNN, LR, XGB models -- although the performance lies with high probability, in the practical equivalence region in comparison to the ANN ans SVM models.
@@ -457,28 +457,28 @@ In the ROPE values frame, we see that the Random Forest appears much better than
 As a secondary test, we may also run the analysis using the accuracy metric. The process is identical, and the results are as follows.
 ```{r warning = FALSE, echo = FALSE}
 model_pos = model_cv |>
-  filter(.metric == "accuracy") |>
-  select(model_name, id, .estimate) |>
-  pivot_wider(names_from = "model_name", values_from = .estimate) |>
-  select(id, knn, logistic, svm, rf, ann, xgb) |>
-  unnest()
+  dplyr::filter(.metric == "accuracy") |>
+  dplyr::select(model_name, id, .estimate) |>
+  tidyr::pivot_wider(names_from = "model_name", values_from = .estimate) |>
+  dplyr::select(id, knn, logistic, svm, rf, ann, xgb) |>
+  tidyr::unnest()
 
 model_comp = perf_mod(model_pos, iter = 2000, chains = 5, seed = 3145)
 ```
 Here are the posterior distributions of the accuracy of all models.
 ```{r}
 model_comp |>
-  tidy() %>% 
-  ggplot(aes(x = posterior)) + 
-  geom_histogram(bins = 40, col = "blue", fill = "blue", alpha = .4) + 
-  facet_wrap(~ model, ncol = 1) + 
-  xlab("Accuracy Score Posterior Distribution")
+  broom::tidy() %>% 
+  ggplot2::ggplot(aes(x = posterior)) + 
+  ggplot2::geom_histogram(bins = 40, col = "blue", fill = "blue", alpha = .4) + 
+  ggplot2::facet_wrap(~ model, ncol = 1) + 
+  ggplot2::xlab("Accuracy Score Posterior Distribution")
 ```
 Similarly as before, we look at the ROPE measure of each pairwise model comparison using a practical effect size of 0.02.
 ```{r}
-model_cont = contrast_models(model_comp, seed = 3145)
+model_cont = tidyposterior::contrast_models(model_comp, seed = 3145)
 summary(model_cont, size = 0.02) |>
-  select(contrast, starts_with("pract"))
+  dplyr::select(contrast, starts_with("pract"))
 ```
 Using the accuracy metric, we see that Random Forests largely surpasses the KNN, LR, XGB, and SVM models -- but the performance is practically equivalent to the ANN model with large probability. 
 
