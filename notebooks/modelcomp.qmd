@@ -1,0 +1,487 @@
+## Comparing Model Performances
+
+```{r load-data, include = FALSE}
+# Code for setup
+
+# Load the data already computed in the index.qmd file.
+data_split <- readRDS(here::here('data/data_split.rds'))
+data_cross_val <- readRDS(here::here('data/data_cross_val.rds'))
+test_outcome <- readRDS(here::here('data/test_outcome.rds'))
+data_rec <- readRDS(here::here('data/data_rec.rds'))
+
+# Set random seed.
+set.seed(3145)
+```
+
+```{r include = FALSE}
+# Run KNN model code to get the resampling data
+
+# Create model specification.
+knn_model_spec <-
+  parsnip::nearest_neighbor(
+    neighbors = tune::tune(),
+    dist_power = tune::tune(),
+    weight_func = tune::tune()
+  ) |>
+  parsnip::set_mode('classification') |>
+  parsnip::set_engine('kknn')
+
+# Create model workflow.
+knn_workflow <- workflows::workflow() |>
+  workflows::add_model(knn_model_spec) |>
+  workflows::add_recipe(data_rec)
+
+#' Check number of available cores.
+cores_no <- parallel::detectCores() - 1
+
+# Create and register clusters.
+clusters <- parallel::makeCluster(cores_no)
+doParallel::registerDoParallel(clusters)
+
+# Fine-tune the model params.
+knn_res <- tune::tune_grid(
+  object = knn_workflow,
+  resamples = data_cross_val,
+  control = tune::control_resamples(save_pred = TRUE)
+)
+
+# Select the best fit based on accuracy.
+knn_best_fit <- 
+  knn_res |> 
+  tune::select_best(metric = 'accuracy')
+
+# Finalize the workflow with the best parameters.
+knn_final_workflow <- 
+  knn_workflow |>
+  tune::finalize_workflow(knn_best_fit)
+
+# Fit the final model using the best parameters.
+knn_final_fit <- 
+  knn_final_workflow |> 
+  tune::last_fit(data_split)
+
+# Stop clusters.
+parallel::stopCluster(clusters)
+
+knn_pred <- 
+  knn_final_fit |> 
+  tune::collect_predictions() |>
+  dplyr::mutate(truth = factor(.pred_class))
+```
+
+```{r include = FALSE}
+# Run SVM model to get remapling data
+
+# Create model specification.
+svm_model_spec <-
+  parsnip::svm_rbf(
+    cost = tune::tune(),
+    rbf_sigma = tune::tune()
+  ) |>
+  parsnip::set_engine('kernlab') |>
+  parsnip::set_mode('classification')
+
+# Create model workflow.
+svm_workflow <- workflows::workflow() |>
+  workflows::add_model(svm_model_spec) |>
+  workflows::add_recipe(data_rec)
+
+#' Check number of available cores.
+cores_no <- parallel::detectCores() - 1
+
+# Create and register clusters.
+clusters <- parallel::makeCluster(cores_no)
+doParallel::registerDoParallel(clusters)
+
+# Fine-tune the model params.
+svm_res <- tune::tune_grid(
+  object = svm_workflow,
+  resamples = data_cross_val,
+  control = tune::control_resamples(save_pred = TRUE)
+)
+
+# Select the best fit based on accuracy.
+svm_best_fit <- 
+  svm_res |> 
+  tune::select_best(metric = 'accuracy')
+
+# Finalize the workflow with the best parameters.
+svm_final_workflow <- 
+  svm_workflow |>
+  tune::finalize_workflow(svm_best_fit)
+
+# Fit the final model using the best parameters.
+svm_final_fit <- 
+  svm_final_workflow |> 
+  tune::last_fit(data_split)
+
+# Stop clusters.
+parallel::stopCluster(clusters)
+
+svm_pred <- 
+  svm_final_fit |> 
+  tune::collect_predictions() |>
+  dplyr::mutate(truth = factor(.pred_class))
+```
+
+```{r include = FALSE}
+# Run ANN model to get resampling data
+
+# Create model specification.
+ann_model_spec <-
+  parsnip::mlp(
+    epochs = tune::tune(),
+    hidden_units = tune::tune(),
+    penalty = tune::tune(),
+    learn_rate = 0.1
+  ) |>
+  parsnip::set_engine('nnet') |>
+  parsnip::set_mode('classification')
+
+# Create model workflow.
+ann_workflow <- workflows::workflow() |>
+  workflows::add_model(ann_model_spec) |>
+  workflows::add_recipe(data_rec)
+
+#' Check number of available cores.
+cores_no <- parallel::detectCores() - 1
+
+# Create and register clusters.
+clusters <- parallel::makeCluster(cores_no)
+doParallel::registerDoParallel(clusters)
+
+# Fine-tune the model params.
+ann_res <- tune::tune_grid(
+  object = ann_workflow,
+  resamples = data_cross_val,
+  control = tune::control_resamples(save_pred = TRUE)
+)
+
+# Select the best fit based on accuracy.
+ann_best_fit <- 
+  ann_res |> 
+  tune::select_best(metric = 'accuracy')
+
+# Finalize the workflow with the best parameters.
+ann_final_workflow <- 
+  ann_workflow |>
+  tune::finalize_workflow(ann_best_fit)
+
+# Fit the final model using the best parameters.
+ann_final_fit <- 
+  ann_final_workflow |> 
+  tune::last_fit(data_split)
+
+
+# Stop clusters.
+parallel::stopCluster(clusters)
+
+# Use the best fit to make predictions on the test data.
+ann_pred <- 
+  ann_final_fit |> 
+  tune::collect_predictions() |>
+  dplyr::mutate(truth = factor(.pred_class))
+```
+
+```{r include = FALSE}
+# Run LR model to get resampling data
+
+# Create model specification.
+lr_model_spec <-
+  parsnip::logistic_reg(
+    penalty = tune(),
+    mixture = 1) |>
+  parsnip::set_mode('classification') |>
+  parsnip::set_engine('glmnet')
+
+# Create model workflow.
+lr_workflow <- workflows::workflow() |>
+  workflows::add_model(lr_model_spec) |>
+  workflows::add_recipe(data_rec)
+
+#' Check number of available cores.
+cores_no <- parallel::detectCores() - 1
+
+# Create and register clusters.
+clusters <- parallel::makeCluster(cores_no)
+doParallel::registerDoParallel(clusters)
+
+# Fine-tune the model params.
+lr_res <- tune::tune_grid(
+  object = lr_workflow,
+  resamples = data_cross_val,
+  control = tune::control_resamples(save_pred = TRUE)
+)
+
+# Select the best fit based on accuracy.
+lr_best_fit <- 
+  lr_res |> 
+  tune::select_best(metric = 'accuracy')
+
+# Finalize the workflow with the best parameters.
+lr_final_workflow <- 
+  lr_workflow |>
+  tune::finalize_workflow(lr_best_fit)
+
+# Fit the final model using the best parameters.
+lr_final_fit <- 
+  lr_final_workflow |> 
+  tune::last_fit(data_split)
+
+# Stop clusters.
+parallel::stopCluster(clusters)
+
+# Use the best fit to make predictions on the test data.
+lr_pred <- 
+  lr_final_fit |> 
+  tune::collect_predictions() |>
+  dplyr::mutate(truth = factor(.pred_class))
+```
+
+```{r include = FALSE}
+# Run RF model to get resampling data
+
+# Create model specification.
+rf_model_spec <- 
+  parsnip::rand_forest(
+    trees = 500,
+    min_n = tune::tune()
+  ) |>
+  parsnip::set_engine('ranger') |>
+  parsnip::set_mode('classification')
+
+# Create model workflow.
+rf_workflow <- workflows::workflow() |>
+  workflows::add_model(rf_model_spec) |>
+  workflows::add_recipe(data_rec)
+
+#' Check number of available cores.
+cores_no <- parallel::detectCores() - 1
+
+# Create and register clusters.
+clusters <- parallel::makeCluster(cores_no)
+doParallel::registerDoParallel(clusters)
+
+# Fine-tune the model params.
+rf_res <- tune::tune_grid(
+  object = rf_workflow,
+  resamples = data_cross_val,
+  control = tune::control_resamples(save_pred = TRUE)
+)
+
+# Select the best fit based on accuracy.
+rf_best_fit <- 
+  rf_res |> 
+  tune::select_best(metric = 'accuracy')
+
+# Finalize the workflow with the best parameters.
+rf_final_workflow <- 
+  rf_workflow |>
+  tune::finalize_workflow(rf_best_fit)
+
+# Fit the final model using the best parameters.
+rf_final_fit <- 
+  rf_final_workflow |> 
+  tune::last_fit(data_split)
+
+# Stop clusters.
+parallel::stopCluster(clusters)
+
+# Use the best fit to make predictions on the test data.
+rf_pred <- 
+  rf_final_fit |> 
+  tune::collect_predictions() |>
+  dplyr::mutate(truth = factor(.pred_class))
+```
+
+```{r include = FALSE}
+# Run XGBoost model to get resampling data
+
+# Create model specification.
+xgboost_model_spec <- 
+  parsnip::boost_tree(
+    trees = 1000,
+    tree_depth = tune(), 
+    min_n = tune(),
+    loss_reduction = tune(),
+    sample_size = tune(), 
+    mtry = tune(),
+    learn_rate = tune()
+  ) |>
+  parsnip::set_engine('xgboost') |>
+  parsnip::set_mode('classification')
+
+# Create model workflow.
+xgboost_workflow <- workflows::workflow() |>
+  workflows::add_model(xgboost_model_spec) |>
+  workflows::add_recipe(data_rec)
+
+#' Check number of available cores.
+cores_no <- parallel::detectCores() - 1
+
+# Create and register clusters.
+clusters <- parallel::makeCluster(cores_no)
+doParallel::registerDoParallel(clusters)
+
+# Fine-tune the model params.
+xgboost_res <- tune::tune_grid(
+  object = xgboost_workflow,
+  resamples = data_cross_val,
+  control = tune::control_resamples(save_pred = TRUE)
+)
+
+# Select the best fit based on accuracy.
+xgboost_best_fit <- 
+  xgboost_res |> 
+  tune::select_best(metric = 'accuracy')
+
+# Finalize the workflow with the best parameters.
+xgboost_final_workflow <- 
+  xgboost_workflow |>
+  tune::finalize_workflow(xgboost_best_fit)
+
+# Fit the final model using the best parameters.
+xgboost_final_fit <- 
+  xgboost_final_workflow |> 
+  tune::last_fit(data_split)
+
+# Stop clusters.
+parallel::stopCluster(clusters)
+
+# Use the best fit to make predictions on the test data.
+xgboost_pred <- 
+  xgboost_final_fit |> 
+  tune::collect_predictions() |>
+  dplyr::mutate(truth = factor(.pred_class))
+```
+
+### Correlation Matrix
+First we compare how different the predictions of the models are on each test observation. Particularly, we look at the correlation heatmap between the models, which computes the correlation between the prediction vectors of every pair of models.
+
+```{r message = FALSE, warning = FALSE}
+total_pred = 
+  dplyr::bind_cols(knn_pred[".pred_class"], svm_pred[".pred_class"], ann_pred[".pred_class"], lr_pred[".pred_class"], rf_pred[".pred_class"], xgboost_pred[".pred_class"]) |>
+  dplyr::rename(KNN = .pred_class...1, SVM = .pred_class...2, ANN = .pred_class...3, LR = .pred_class...4, RF = .pred_class...5, XGBoost = .pred_class...6) |>
+  dplyr::mutate_if(is.factor, as.numeric)
+
+ggcorrplot::ggcorrplot(cor(total_pred), lab = TRUE, type = "lower") +
+  ggtitle("Correlation Heatmap of Model Predicitons")
+```
+Notice how the correlation between the SVM predictions and the rest of the models is much lower than the other correlations. This suggests that SVM predicts DTC in a quite different manner than the rest of the models. Investgating a bit further, we notice that this is closely related to SVM having a recall of 100%, but an extremely low precision (of 23.1%). On the test set, the SVM model predicts all the true positives but also has a large false positive rate of 23.5%.
+
+In comparison to the predictions of the other models, we notice that there is not a single test case for which SVM predicts negative but another model predicts positive -- all disparities are where SVM predicts positive but other models predict negative. For each model, there are between 14 and 20 test cases (among the 91 total) for which SVM predicts positive but the other model predicts negative.
+
+### Bayesian Analysis of Model Performances
+Now as a general question, we may ask how the different models really compare and whether the best performing model is actually the best. For this task, we use the resampling results during the tuning of the data which serves as an approximation of model performance. Precisely, we look at the cross validation performance metrics of each model and compare them in a Bayesian manner. While not the same as test performance, we expect the resampling metrics to approximate the metrics on the test data.
+
+Bayesian model comparison has its advantage that we can make more intuitive and practical inferences than frequentist analysis. Mathematically, how the Bayesian model comparison works is as follows. We use a Bayesian ANOVA model to generate distributions of the metric estimate for each model. 
+
+
+A standard ANOVA model (written as a linear regression) for comparing models would be as follows:
+\[y = \beta_0 + \beta_1 m_1 + \dots \beta_km_k,\]
+where the $y$ denotes the metric to be predicted and the $m_j$ serve as indicator variables for each model. The $\beta_0$ denotes the metric estimate for the base model, and the rest of the $\beta_i$ denote the difference in metric estimate of model $i$ and the base reference model. We are trying to predict whether any of the $\beta_i$ are 0. (It doesn't matter which model we pick as the base model.) 
+
+It turns out that since each resample can have its own characteristics (termed as resample-to-resample effects), the metrics outputs are often dependent on the resample. Hence, we the model equation is instead
+\[y = \beta_{i0} + \beta_1 m_1 + \dots \beta_km_k.\]
+Note that we do not have the rest of the $\beta_j$ dependent on the specific resample. This turns out to be a reasonable assumption since we expect the difference in metric estimates (compared to the base model) across all resamples to have the same model coefficients. (In other words, we expect the regression lines to be roughly parallel).
+
+Now in the Bayesian case, the parameters $\beta_i$ all have a prior distribution, which represent our prior beliefs about them before processing any model results. In this case, we just use the default uninformative priors. Then as the data is processed in, the distribution on these parameters is adjusted according to likelihood estimates -- and finally we get the new posterior distribution of each parameter. All of this is conveniently handled by functions in the `tidyposterior` library.
+
+To formally compare the posterior distributions of each parameter, we look at the distribution of differences. We then look at the ROPE (Region of Practical Significance) estimate, which represents the probability that the two models are practically the same. This is done by computing the probability that the difference of metric estimates is within some fixed threshhold, often set to 0.02.
+
+For the comparison of models here, we use the ROC-AUC metric (which is good at handling unbalanced data). The code is as follows. 
+
+
+```{r, warning = FALSE, echo = FALSE}
+# gather all the resample results into a tibble
+model_cv = tibble::tibble(model = list(lr_res, knn_res, svm_res, rf_res, ann_res, xgboost_res), model_name = c("logistic", "knn", "svm", "rf", "ann", "xgb"))
+
+# function for unnesting the individual metrics from each fold
+map_metrics = function (model){
+  model |>
+    dplyr::select(id, .metrics) |>
+    tidyr::unnest()
+}
+
+# apply the function above and unnest each model
+model_cv = model_cv |>
+  dplyr::mutate(res = map(model, map_metrics)) |>
+  dplyr::select(model_name, res) |>
+  tidyr::unnest(res)
+
+# filter the metric to roc-auc and convert the tibble into an appropriate form
+model_pos = model_cv |>
+  dplyr::filter(.metric == "roc_auc") |>
+  dplyr::select(model_name, id, .estimate) |>
+  tidyr::pivot_wider(names_from = "model_name", values_from = .estimate) |>
+  dplyr::select(id, knn, logistic, svm, rf, ann, xgb) |>
+  tidyr::unnest()
+
+model_comp = tidyposterior::perf_mod(model_pos, iter = 2000, chains = 5, seed = 3145)
+```
+
+Here is a graph comparing the ROC-AUC metrics for each model per resampling fold.
+```{r}
+model_cv |>
+  dplyr::filter(.metric == "roc_auc") |>
+  ggplot2::ggplot(aes(x = model_name, y = .estimate, color = id, group = id)) +
+  ggplot2::geom_line() +
+  ggplot2::facet_wrap(~.metric, scales = "free_y", ncol = 1)
+```
+Ideally, these lines should be parallel. While this is not the case here, the lines do appear to have a similar trend.
+
+Next, here are the actual posterior distributions for the ROC-AUC metric of each model.
+```{r}
+model_comp |>
+  broom::tidy() %>% 
+  ggplot2::ggplot(aes(x = posterior)) + 
+  ggplot2::geom_histogram(bins = 40, col = "blue", fill = "blue", alpha = .4) + 
+  ggplot2::facet_wrap(~ model, ncol = 1) + 
+  ggplot2::xlab("ROC-AUC Score Posterior Distribution")
+```
+ 
+```{r}
+ggplot2::autoplot(model_comp)
+```
+As we see, the Random Forest model appears to have the highest ROC-AUC metric, though ANN and SVM both appear close seconds.
+
+Precisely, here are ROPE measures of each pairwise model comparison where we use a practical effect size of 0.02 (ie. the probability that the difference in ROC-AUC of two models is at most 0.02).
+```{r}
+model_cont = tidyposterior::contrast_models(model_comp, seed = 3145)
+summary(model_cont, size = 0.02) |>
+  dplyr::select(contrast, starts_with("pract")) 
+```
+
+In the ROPE values frame, we see that the Random Forest appears much better than the KNN, LR, XGB models -- although the performance lies with high probability, in the practical equivalence region in comparison to the ANN ans SVM models.
+
+As a secondary test, we may also run the analysis using the accuracy metric. The process is identical, and the results are as follows.
+```{r warning = FALSE, echo = FALSE}
+model_pos = model_cv |>
+  dplyr::filter(.metric == "accuracy") |>
+  dplyr::select(model_name, id, .estimate) |>
+  tidyr::pivot_wider(names_from = "model_name", values_from = .estimate) |>
+  dplyr::select(id, knn, logistic, svm, rf, ann, xgb) |>
+  tidyr::unnest()
+
+model_comp = perf_mod(model_pos, iter = 2000, chains = 5, seed = 3145)
+```
+Here are the posterior distributions of the accuracy of all models.
+```{r}
+model_comp |>
+  broom::tidy() %>% 
+  ggplot2::ggplot(aes(x = posterior)) + 
+  ggplot2::geom_histogram(bins = 40, col = "blue", fill = "blue", alpha = .4) + 
+  ggplot2::facet_wrap(~ model, ncol = 1) + 
+  ggplot2::xlab("Accuracy Score Posterior Distribution")
+```
+Similarly as before, we look at the ROPE measure of each pairwise model comparison using a practical effect size of 0.02.
+```{r}
+model_cont = tidyposterior::contrast_models(model_comp, seed = 3145)
+summary(model_cont, size = 0.02) |>
+  dplyr::select(contrast, starts_with("pract"))
+```
+Using the accuracy metric, we see that Random Forests largely surpasses the KNN, LR, XGB, and SVM models -- but the performance is practically equivalent to the ANN model with large probability. 
+
+Thus the RF metric distribution exceeds all of the KNN, LR, SGB, and SVM distributions for at least one metric. Though the results suggest that ANN is comparable to the RF model as it lies in the the region of practical equivalence as the RF model for both metrics.
+
+Hence, even though this is not apparent in the test set metrics (as Random Forest surpassed the other models in three different metrics), the resampling analysis suggests that the Random Forests and Artificial Neural Networks are largely equivalent in predicting the recurrence of Differentiated Thyroid Cancer. Nonetheless, as Random Forests are the simpler model, we say it is better to choose this model.
