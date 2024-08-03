@@ -15,6 +15,16 @@
 - May 31: Research period ends.
 - June 15: Interim research report due.
 
+### Requirements
+
+To run the project for the first time, start by restoring the virtual
+environment by running `renv::init()`. Also, install the Python modules `kaleido` and `plotly`:
+
+```python
+    pip install kaleido
+    pip install plotly
+```
+
 ### Repository Workflow Guidelines
 
 To maintain an organized workflow within our repository, please adhere
