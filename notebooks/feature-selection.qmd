@@ -4,7 +4,7 @@
 We first do feature selection using factor analysis of mixed data (FAMD), which is a variant of PCA that can be directly applied to data sets with both categorical and numerical variables without using one-hot encoding beforehand. We use the package `PCAmixdata` described in @chavent2022.
 
 To apply the `PCAmix` function, we split the data into categorical variables and numerical variables.
-```{r}
+```{r,echo=TRUE, warning=FALSE}
 library("PCAmixdata")
 split_data <- splitmix(cleaned_data)
 X1 <- split_data$X.quanti
@@ -13,22 +13,22 @@ PCA_mix_result <- PCAmix(X.quanti=X1, X.quali=X2, rename.level = TRUE, graph=FAL
 ```
 
 The following output shows the percent contribution of each categorical variable to the first five dimensions.
-```{r}
+```{r,echo=TRUE}
 PCA_mix_result$quali$contrib.pct
 ```
 
 The following output shows the percent contribution of the numerical variable to the first five dimensions.
-```{r}
+```{r,echo=TRUE}
 PCA_mix_result$quanti$contrib.pct
 ```
 Altogether, we see that the top three contributors for the first dimension are Risk, T, and Response. The top three contributors for the second dimension are Risk, T, and Stage. The top three contributors for the third dimension are T, Pathology, and Physical Examination. This suggests that Risk, T, Response, Stage, and Pathology are significant features.
 
-The significant features identified by FAMD are very consistent with the significant features (Response, Gender, Risk, Age, Pathology) proposed by the other DTC recurrence paper @borzooei2023.
+The significant features identified by FAMD are very consistent with the significant features (Response, Gender, Risk, Age, Pathology) proposed by the paper @borzooei2023.
 
 ## Principal Components Analysis
 We also do feature selection using PCA, which is a common approach to encode most of the variability in a data set with a smaller number of features. Before applying PCA, we first use one-hot encoding to transform all categorical variables into numerical variables.
 
-```{r, warning=FALSE}
+```{r,echo=TRUE, warning=FALSE}
 pca_recipe <- cleaned_data |>
   recipe(Recurred ~ .) |>
   step_normalize(all_numeric()) |>
