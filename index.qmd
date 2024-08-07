@@ -9,7 +9,7 @@ author:
     email: ekam2466@gmail.com
   - name: Susie Lu
     affiliations: MIT PRIMES
-    email: S2010Lu@gmail.com
+    email: SusieLu@ohs.stanford.edu
 keywords:
   - Cancer Research
   - Machine Learning
@@ -20,7 +20,7 @@ keywords:
   - XGBoost
   - Random Forest
 abstract: |
-  This study assesses the efficacy of machine learning algorithms—Artificial Neural Network, K-Nearest Neighbors, Support Vector Machine, Logistic Regression, Extreme Gradient Boosting, and Random Forest—in predicting recurrence in Differentiated Thyroid Cancer (DTC). Using a comprehensive dataset from the UCI Machine Learning Repository, we conduct a comparative analysis of these algorithms based on key performance metrics. Our investigation seeks to identify the best model for predicting DTC recurrence, aiming to advance personalized treatment strategies and improve clinical outcomes in thyroid cancer care.
+  This study assesses the efficacy of machine learning algorithms—Artificial Neural Network, K-Nearest Neighbors, Support Vector Machine, Logistic Regression, Extreme Gradient Boosting, and Random Forest—in predicting recurrence in Differentiated Thyroid Cancer (DTC). Using a comprehensive dataset from the UCI Machine Learning Repository, we conduct a comparative analysis of these algorithms based on key performance metrics and Bayesian model comparison. We identify the best model for predicting DTC recurrence, and we also pinpoint the critical clinical/pathological features that influence recurrence using two feature selection techniques, aiming to advance personalized treatment strategies and improve outcomes in thyroid cancer care.
 date: last-modified
 bibliography: references.bib
 citation:
@@ -53,6 +53,8 @@ csl: bib-format/institute-of-mathematical-statistics.csl
 <!-- EDA --->
 {{< include notebooks/eda.qmd >}}
 
+<!-- Feature Selection --->
+{{< include notebooks/feature-selection.qmd >}}
 
 <!----------------------------------------------------------------------------->
 <!--------------------------------- ## MODELS --------------------------------->

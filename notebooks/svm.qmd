@@ -9,7 +9,8 @@ SVM is particularly effective in high-dimensional spaces and is useful when the 
 The most commonly used kernel in SVM is the Radial Basis Function (RBF) kernel, also known as the Gaussian kernel. The RBF kernel maps input features into an infinite-dimensional space, allowing SVM to create complex decision boundaries. The RBF kernel function is defined as:
 
 $$K(X_i, X_j) = e^{- \frac{|| X_i - X_j ||^2}{2 \sigma^2}}$$
-where $X_i$ and $X_j$ are the input feature vectors, and $\sigma$ is a parameter that determines the spread of the kernel and controls the influence of individual training samples.
+where $X_i$ and $X_j$ are the input feature vectors, and $\sigma$ is a parameter that determines the spread of the kernel and controls the influence of individual training samples. Another commonly used kernel is the polynomial kernel, which maps input features into a higher-dimensional space with polynomials of degree $d$. The polynomial kernel function is defined as
+$$K(X_i,X_j) = (X_i \cdot X_j)^d. $$
 
 ### Model Workflow
 
@@ -26,7 +27,7 @@ set.seed(3145)
 
 ```
 
-We will create an SVM model specification and workflow, indicating the model hyperparameters $\sigma$ (or `rbf_sigma`) and `cost`. The `rbf_sigma` parameter controls the influence of individual training examples, while the `cost` parameter controls the trade-off between achieving a low training error and a low testing error, which affects the model's ability to generalize. To optimize our model, we will use the `tune::tune()` function to find the optimal values of these parameters in terms of model accuracy.
+First, we will create an SVM model specification and workflow, indicating the model hyperparameters $\sigma$ (or `rbf_sigma`) and `cost`. The `rbf_sigma` parameter controls the influence of individual training examples, while the `cost` parameter controls the trade-off between achieving a low training error and a low testing error, which affects the model's ability to generalize. To optimize our model, we will use the `tune::tune()` function to find the optimal values of these parameters in terms of model accuracy.
 
 
 ```{r svm-workflow, echo=TRUE}
@@ -47,6 +48,25 @@ svm_workflow <- workflows::workflow() |>
 
 ```
 
+
+We will also create an SVM model specification and workflow using the polynomial kernel.
+```{r svm-poly-workflow, echo=TRUE}
+
+# Create model specification.
+svm_model_spec2 <-
+  parsnip::svm_poly(
+    cost = tune::tune(),
+    degree = tune::tune()
+  ) |>
+  parsnip::set_engine('kernlab') |>
+  parsnip::set_mode('classification')
+
+# Create model workflow.
+svm_workflow2 <- workflows::workflow() |>
+  workflows::add_model(svm_model_spec2) |>
+  workflows::add_recipe(data_rec)
+
+```
 
 ### Model Tuning and Fitting
 
@@ -85,6 +105,49 @@ svm_final_workflow <-
 # Fit the final model using the best parameters.
 svm_final_fit <- 
   svm_final_workflow |> 
+  tune::last_fit(data_split)
+
+# Stop clusters.
+parallel::stopCluster(clusters)
+
+# Stop timer.
+tictoc::toc()
+
+```
+
+We similarly tune the SVM that was based on the polynomial kernel.
+```{r svm-param-tunning-poly, echo=TRUE}
+
+#' Check number of available cores.
+cores_no <- parallel::detectCores() - 1
+
+#' Start timer.
+tictoc::tic()
+
+# Create and register clusters.
+clusters <- parallel::makeCluster(cores_no)
+doParallel::registerDoParallel(clusters)
+
+# Fine-tune the model params.
+svm_res2 <- tune::tune_grid(
+  object = svm_workflow2,
+  resamples = data_cross_val,
+  control = tune::control_resamples(save_pred = TRUE)
+)
+
+# Select the best fit based on accuracy.
+svm_best_fit2 <- 
+  svm_res2 |> 
+  tune::select_best(metric = 'accuracy')
+
+# Finalize the workflow with the best parameters.
+svm_final_workflow2 <- 
+  svm_workflow2 |>
+  tune::finalize_workflow(svm_best_fit2)
+
+# Fit the final model using the best parameters.
+svm_final_fit2 <- 
+  svm_final_workflow2 |> 
   tune::last_fit(data_split)
 
 # Stop clusters.
@@ -135,8 +198,8 @@ readr::write_csv(x = svm_metrics_table, file = here::here('data', 'svm-metrics.c
 ::: {.content-visible when-format="html"}
 ```{r include=knitr::is_html_output()}
 #| label: tbl-svm-performance-html
-#| tbl-cap: 'SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
-#| tbl-alt: 'SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+#| tbl-cap: 'RBF SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+#| tbl-alt: 'RBF SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
 
 # Prepare table's theme.
 theme <- reactable::reactableTheme(
@@ -164,8 +227,8 @@ svm_metrics_table |>
 ::: {.content-visible when-format="pdf"}
 ```{r include=knitr::is_latex_output()}
 #| label: tbl-svm-performance-pdf
-#| tbl-cap: 'SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
-#| tbl-alt: 'SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+#| tbl-cap: 'RBF SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+#| tbl-alt: 'RBF SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
 
 gt::gt(svm_metrics_table) |>
   gt::tab_style(
@@ -176,3 +239,82 @@ gt::gt(svm_metrics_table) |>
 
 ```
 :::
+
+We also apply our selected SVM based on the polynomial kernel to the test set. The final metrics are given in `r ifelse(knitr::is_html_output(), '@tbl-svm-poly-performance-html', '@tbl-svm-poly-performance-pdf')`.
+
+```{r svm-performance-poly, echo=TRUE}
+# Use the best fit to make predictions on the test data.
+svm_pred2 <- 
+  svm_final_fit2 |> 
+  tune::collect_predictions() |>
+  dplyr::mutate(truth = factor(.pred_class))
+
+```
+
+
+```{r svm-metrics-tbl-poly}
+# Create metrics table.
+svm_metrics_table2 <- list(
+  'Accuracy' = yardstick::accuracy_vec(truth = svm_pred2[['.pred_class']],
+                                       estimate = test_outcome),
+  'Precision' = yardstick::precision_vec(truth = svm_pred2[['.pred_class']],
+                                         estimate = test_outcome),
+  'Recall' = yardstick::recall_vec(truth = svm_pred2[['.pred_class']],
+                                   estimate = test_outcome),
+  'Specificity' = yardstick::specificity_vec(truth = svm_pred2[['.pred_class']],
+                                            estimate = test_outcome)
+) |>
+  dplyr::bind_cols() |>
+  tidyr::pivot_longer(cols = dplyr::everything(), names_to = 'Metric', values_to = 'Value') |>
+  dplyr::mutate(Value = round(Value*100, 1))
+
+readr::write_csv(x = svm_metrics_table2, file = here::here('data', 'svm-poly-metrics.csv'))
+
+```
+
+::: {.content-visible when-format="html"}
+```{r include=knitr::is_html_output()}
+#| label: tbl-svm-poly-performance-html
+#| tbl-cap: 'Polynomial SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+#| tbl-alt: 'Polynomial SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+
+# Prepare table's theme.
+theme2 <- reactable::reactableTheme(
+  borderColor = "#dfe2e5",
+  stripedColor = "#f6f8fa",
+  highlightColor = "#f0f5f9",
+  cellPadding = "8px 12px"
+)
+
+svm_metrics_table2 |>
+  dplyr::mutate(Value = paste0(Value, '%')) |>
+  reactable::reactable(
+    searchable = FALSE,
+    resizable = TRUE,
+    onClick = "expand",
+    bordered = TRUE,
+    highlight = TRUE,
+    compact = TRUE,
+    height = "auto",
+    theme = theme2
+  )
+```
+:::
+
+::: {.content-visible when-format="pdf"}
+```{r include=knitr::is_latex_output()}
+#| label: tbl-svm-poly-performance-pdf
+#| tbl-cap: 'Polynomial SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+#| tbl-alt: 'Polynomial SVM Performance Metrics: Accuracy, Precision, Recall, and Specificity.'
+
+gt::gt(svm_metrics_table2) |>
+  gt::tab_style(
+    style = list(gt::cell_fill(color = "white")),
+    locations = gt::cells_body(gt::everything())
+  ) |>
+  gt::cols_width(gt::everything() ~ gt::pct(50))
+
+```
+:::
+
+The SVM based on the RBF kernel has a perfect recall of 100%, so it excels at capturing all actual positive cases, even though its precision metric is relatively low. On the other hand, when it is more important to have high percentages for all four metrics, the SVM based on the polynomial kernel would be better.
